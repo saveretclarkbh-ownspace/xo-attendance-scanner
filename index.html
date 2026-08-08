@@ -91,6 +91,16 @@
       color: white;
     }
 
+    #uploadButton {
+      background: #1a73e8;
+      color: white;
+    }
+
+    #uploadButton:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     .success {
       color: #16803c;
       font-weight: bold;
@@ -164,7 +174,20 @@
       ⛔ Stop Camera
     </button>
 
-  </div>
+  
+
+    <button id="uploadButton" type="button">
+      🖼️ Upload QR Code
+    </button>
+
+    <input
+      id="qrFileInput"
+      type="file"
+      accept="image/*"
+      capture="environment"
+      hidden
+    >
+</div>
 
 
   <div id="status">
@@ -216,6 +239,12 @@ const startButton =
 
 const stopButton =
   document.getElementById("stopButton");
+
+const uploadButton =
+  document.getElementById("uploadButton");
+
+const qrFileInput =
+  document.getElementById("qrFileInput");
 
 
 /*
@@ -782,6 +811,170 @@ function sendAttendance(qrId) {
 
 /*
 ====================================================
+UPLOAD QR CODE
+====================================================
+*/
+
+async function uploadQRCode(file) {
+
+  if (!file) return;
+
+  if (processingQR) {
+    result.innerHTML =
+      '<div class="checking">' +
+      '⏳ Please wait for the current attendance check to finish.' +
+      '</div>';
+    return;
+  }
+
+  processingQR = true;
+  scanning = false;
+  uploadButton.disabled = true;
+
+  status.textContent =
+    "Reading uploaded QR image...";
+
+  result.innerHTML =
+    '<div class="checking">' +
+    '⏳ Reading QR code...' +
+    '<br><br><small>Please wait.</small>' +
+    '</div>';
+
+  try {
+
+    if (!("BarcodeDetector" in window)) {
+      throw new Error(
+        "QR image scanning is not supported by this browser. Please use a current Chrome browser or use the camera scanner."
+      );
+    }
+
+    const imageDetector =
+      new BarcodeDetector({
+        formats: ["qr_code"]
+      });
+
+    let imageSource;
+
+    try {
+      imageSource = await createImageBitmap(file);
+    } catch (e) {
+      imageSource = await loadImageFromFile(file);
+    }
+
+    const barcodes =
+      await imageDetector.detect(imageSource);
+
+    if (
+      imageSource &&
+      typeof imageSource.close === "function"
+    ) {
+      imageSource.close();
+    }
+
+    if (!barcodes || barcodes.length === 0) {
+      throw new Error(
+        "No QR code was found in that image. Please upload a clear QR code image."
+      );
+    }
+
+    const qrText =
+      String(barcodes[0].rawValue || "").trim();
+
+    const qrId =
+      extractXOQrId(qrText);
+
+    if (!qrId) {
+      throw new Error(
+        "This is not a valid XO+ QR code. The QR must contain an XO ID such as XO-0001."
+      );
+    }
+
+    result.innerHTML =
+      '<div class="checking">' +
+      '⏳ Checking attendance...' +
+      '<br><br><small>' +
+      escapeHtml(qrId) +
+      '</small></div>';
+
+    sendAttendance(qrId);
+
+  } catch (error) {
+
+    console.error("Uploaded QR error:", error);
+
+    result.innerHTML =
+      '<div class="error">' +
+      '❌ Unable to read QR code' +
+      '<br><br><small>' +
+      escapeHtml(
+        error.message ||
+        "Please upload a clear QR code image."
+      ) +
+      '</small></div>';
+
+    processingQR = false;
+
+    setTimeout(function() {
+      scanning = true;
+    }, 3000);
+
+  } finally {
+
+    uploadButton.disabled = false;
+    qrFileInput.value = "";
+  }
+}
+
+
+/*
+====================================================
+LOAD IMAGE FILE
+====================================================
+*/
+
+function loadImageFromFile(file) {
+
+  return new Promise(function(resolve, reject) {
+
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = function() {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+
+    image.onerror = function() {
+      URL.revokeObjectURL(url);
+      reject(
+        new Error("The uploaded image could not be opened.")
+      );
+    };
+
+    image.src = url;
+  });
+}
+
+
+/*
+====================================================
+EXTRACT XO QR ID
+====================================================
+*/
+
+function extractXOQrId(value) {
+
+  const text = String(value || "").trim();
+  const match = text.match(/XO-\d{1,8}/i);
+
+  return match
+    ? match[0].toUpperCase()
+    : null;
+}
+
+
+/*
+====================================================
 STOP CAMERA
 ====================================================
 */
@@ -853,6 +1046,25 @@ startButton.addEventListener(
 stopButton.addEventListener(
   "click",
   stopCamera
+);
+
+uploadButton.addEventListener(
+  "click",
+  function() {
+    qrFileInput.click();
+  }
+);
+
+qrFileInput.addEventListener(
+  "change",
+  function(event) {
+
+    const file =
+      event.target.files &&
+      event.target.files[0];
+
+    uploadQRCode(file);
+  }
 );
 
 
