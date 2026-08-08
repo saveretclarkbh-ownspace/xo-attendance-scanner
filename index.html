@@ -17,7 +17,6 @@
 
 <title>XO+ Attendance</title>
 
-
 <style>
 
 /* =========================================================
@@ -43,7 +42,6 @@ body {
     sans-serif;
 
   background: #ffffff;
-
   color: #111111;
 
   overflow-x: hidden;
@@ -51,7 +49,7 @@ body {
 
 
 /* =========================================================
-   MAIN
+   MAIN CONTAINER
 ========================================================= */
 
 .container {
@@ -63,59 +61,55 @@ body {
 
 
 /* =========================================================
-   XO+ HEADER
-   EDGE TO EDGE
+   XO+ HEADER — FULL EDGE TO EDGE
 ========================================================= */
 
 .logo-header {
-
   width: 100%;
+  min-height: 150px;
 
-  min-height: 125px;
-
-  padding:
-    20px
-    20px
-    18px;
+  margin: 0;
+  padding: 0;
 
   display: flex;
-
   justify-content: center;
-
   align-items: center;
 
   background: #ffffff;
 
-  border-bottom:
-    1px solid #eeeeee;
+  border-bottom: 1px solid #eeeeee;
 
   box-shadow:
     0 3px 14px rgba(0, 0, 0, 0.06);
+
+  overflow: hidden;
 }
 
 
-.logo-image {
+/*
+  The image itself is allowed to become
+  much wider than before.
+*/
 
+.logo-image {
   display: block;
 
-  width: auto;
-
-  max-width: 82%;
+  width: 100%;
+  max-width: none;
 
   height: auto;
 
-  max-height: 95px;
+  max-height: 150px;
 
   object-fit: contain;
 }
 
 
 /* =========================================================
-   SCANNER AREA
+   SCANNER SECTION
 ========================================================= */
 
 .scanner-section {
-
   width: 100%;
 
   padding:
@@ -130,7 +124,6 @@ body {
 ========================================================= */
 
 .video-wrapper {
-
   position: relative;
 
   width: 100%;
@@ -147,13 +140,10 @@ body {
     0 6px 24px rgba(0, 0, 0, 0.12);
 }
 
-
 #video {
-
   display: block;
 
   width: 100%;
-
   height: 100%;
 
   min-height: 430px;
@@ -169,7 +159,6 @@ body {
 ========================================================= */
 
 #scanBox {
-
   position: absolute;
 
   width: min(68vw, 330px);
@@ -177,7 +166,6 @@ body {
   aspect-ratio: 1 / 1;
 
   left: 50%;
-
   top: 50%;
 
   transform:
@@ -200,15 +188,12 @@ body {
 ========================================================= */
 
 #status {
-
   width: 100%;
 
   min-height: 26px;
 
   margin:
-    15px
-    0
-    15px;
+    15px 0;
 
   text-align: center;
 
@@ -227,7 +212,6 @@ body {
 ========================================================= */
 
 .button-container {
-
   width: 100%;
 
   display: flex;
@@ -241,14 +225,12 @@ body {
 #startButton,
 #stopButton,
 #uploadButton {
-
   width: 100%;
 
   min-height: 56px;
 
   padding:
-    15px
-    18px;
+    15px 18px;
 
   border-radius: 14px;
 
@@ -270,16 +252,14 @@ body {
 #startButton:active,
 #stopButton:active,
 #uploadButton:active {
-
   transform:
     scale(0.98);
 }
 
 
-/* START */
+/* START CAMERA */
 
 #startButton {
-
   border: none;
 
   background: #d71920;
@@ -292,11 +272,11 @@ body {
 }
 
 
-/* STOP */
+/* STOP CAMERA */
 
 #stopButton {
-
-  border: 1px solid #dddddd;
+  border:
+    1px solid #dddddd;
 
   background: #f1f1f1;
 
@@ -304,10 +284,9 @@ body {
 }
 
 
-/* UPLOAD */
+/* UPLOAD QR */
 
 #uploadButton {
-
   border:
     2px solid #d71920;
 
@@ -318,7 +297,6 @@ body {
 
 
 #qrFileInput {
-
   display: none;
 }
 
@@ -328,14 +306,14 @@ body {
 ========================================================= */
 
 .error-message {
-
   display: none;
 
   width: 100%;
 
   margin-top: 14px;
 
-  padding: 14px 16px;
+  padding:
+    14px 16px;
 
   border-radius: 12px;
 
@@ -353,19 +331,16 @@ body {
   text-align: center;
 }
 
-
 .error-message.show {
-
   display: block;
 }
 
 
 /* =========================================================
-   ATTENDANCE MODAL
+   ATTENDANCE POPUP OVERLAY
 ========================================================= */
 
 .attendance-overlay {
-
   position: fixed;
 
   inset: 0;
@@ -378,11 +353,10 @@ body {
 
   justify-content: center;
 
-  padding:
-    20px;
+  padding: 18px;
 
   background:
-    rgba(0, 0, 0, 0.60);
+    rgba(0, 0, 0, 0.62);
 
   backdrop-filter:
     blur(5px);
@@ -391,9 +365,7 @@ body {
     blur(5px);
 }
 
-
 .attendance-overlay.show {
-
   display: flex;
 
   animation:
@@ -415,17 +387,16 @@ body {
 
 
 /* =========================================================
-   POPUP
+   ATTENDANCE POPUP
 ========================================================= */
 
 .attendance-card {
-
   width: 100%;
 
   max-width: 440px;
 
   max-height:
-    calc(100vh - 40px);
+    calc(100vh - 36px);
 
   overflow-y: auto;
 
@@ -442,7 +413,7 @@ body {
 
   box-shadow:
     0 20px 60px
-    rgba(0, 0, 0, 0.28);
+    rgba(0, 0, 0, 0.30);
 
   border-top:
     6px solid #d71920;
@@ -455,23 +426,19 @@ body {
 @keyframes popupIn {
 
   from {
-
     opacity: 0;
 
     transform:
       translateY(20px)
       scale(0.96);
-
   }
 
   to {
-
     opacity: 1;
 
     transform:
       translateY(0)
       scale(1);
-
   }
 
 }
@@ -482,20 +449,15 @@ body {
 ========================================================= */
 
 .success-icon {
-
   width: 70px;
-
   height: 70px;
 
   margin:
-    0
-    auto
-    16px;
+    0 auto 16px;
 
   display: flex;
 
   align-items: center;
-
   justify-content: center;
 
   border-radius: 50%;
@@ -517,11 +479,8 @@ body {
 ========================================================= */
 
 .attendance-title {
-
   margin:
-    0
-    0
-    17px;
+    0 0 17px;
 
   color: #111111;
 
@@ -534,15 +493,12 @@ body {
 
 
 /* =========================================================
-   FULL NAME
+   FULL ATTENDEE NAME
 ========================================================= */
 
 .attendance-name {
-
   margin:
-    0
-    auto
-    12px;
+    0 auto 12px;
 
   max-width: 100%;
 
@@ -564,14 +520,12 @@ body {
 ========================================================= */
 
 .attendance-qr {
-
   display: inline-block;
 
   margin-bottom: 15px;
 
   padding:
-    7px
-    13px;
+    7px 13px;
 
   border-radius: 8px;
 
@@ -592,7 +546,6 @@ body {
 ========================================================= */
 
 .attendance-time {
-
   margin-bottom: 15px;
 
   color: #555555;
@@ -608,7 +561,6 @@ body {
 ========================================================= */
 
 .confirmation-message {
-
   margin-bottom: 20px;
 
   color: #333333;
@@ -624,13 +576,10 @@ body {
 ========================================================= */
 
 .countdown-wrap {
-
   margin-bottom: 20px;
 }
 
-
 .countdown-label {
-
   margin-bottom: 7px;
 
   color: #777777;
@@ -638,21 +587,18 @@ body {
   font-size: 12px;
 }
 
-
 .countdown {
-
   margin-bottom: 9px;
 
-  color: #d71920;
+  color:
+    #d71920;
 
   font-size: 17px;
 
   font-weight: 800;
 }
 
-
 .progress-track {
-
   width: 100%;
 
   height: 7px;
@@ -661,19 +607,19 @@ body {
 
   border-radius: 20px;
 
-  background: #eeeeee;
+  background:
+    #eeeeee;
 }
 
-
 #confirmationProgress {
-
   width: 100%;
 
   height: 100%;
 
   border-radius: 20px;
 
-  background: #d71920;
+  background:
+    #d71920;
 
   transition:
     width 1s linear;
@@ -681,11 +627,10 @@ body {
 
 
 /* =========================================================
-   DONE BUTTON
+   DONE — CONTINUE
 ========================================================= */
 
 #closeAttendanceButton {
-
   width: 100%;
 
   min-height: 52px;
@@ -694,7 +639,8 @@ body {
 
   border-radius: 13px;
 
-  background: #d71920;
+  background:
+    #d71920;
 
   color: #ffffff;
 
@@ -717,25 +663,31 @@ body {
 @media (max-width: 600px) {
 
   .logo-header {
+    width: 100%;
 
-    min-height: 115px;
+    min-height: 125px;
 
     padding:
-      16px
-      12px;
+      0;
+
+    margin: 0;
   }
 
 
   .logo-image {
+    width: 100%;
 
-    max-width: 90%;
+    max-width: none;
 
-    max-height: 82px;
+    max-height: 125px;
+
+    height: auto;
+
+    object-fit: contain;
   }
 
 
   .scanner-section {
-
     padding:
       14px
       12px
@@ -744,19 +696,16 @@ body {
 
 
   .video-wrapper {
-
     min-height: 390px;
   }
 
 
   #video {
-
     min-height: 390px;
   }
 
 
   #scanBox {
-
     width: 70vw;
 
     max-width: 310px;
@@ -764,14 +713,12 @@ body {
 
 
   .attendance-overlay {
-
     padding:
-      14px;
+      12px;
   }
 
 
   .attendance-card {
-
     padding:
       28px
       18px
@@ -782,13 +729,11 @@ body {
 
 
   .attendance-name {
-
     font-size: 21px;
   }
 
 
   .attendance-title {
-
     font-size: 23px;
   }
 
@@ -802,20 +747,17 @@ body {
 @media (max-width: 380px) {
 
   .logo-header {
-
-    min-height: 100px;
+    min-height: 110px;
   }
 
 
   .logo-image {
-
-    max-height: 70px;
+    max-height: 110px;
   }
 
 
   .video-wrapper,
   #video {
-
     min-height: 340px;
   }
 
@@ -823,7 +765,6 @@ body {
   #startButton,
   #stopButton,
   #uploadButton {
-
     min-height: 53px;
 
     font-size: 15px;
@@ -843,7 +784,7 @@ body {
 
 
   <!-- =====================================================
-       EDGE-TO-EDGE XO+ HEADER
+       XO+ LOGO — FULL WIDTH
   ====================================================== -->
 
   <header class="logo-header">
@@ -882,9 +823,7 @@ body {
     </div>
 
 
-    <!-- ===================================================
-         BUTTONS
-    =================================================== -->
+    <!-- BUTTONS -->
 
     <div class="button-container">
 
@@ -929,19 +868,17 @@ body {
 
   </main>
 
-
 </div>
 
 
 <!-- =========================================================
-     ATTENDANCE CONFIRMATION POPUP
+     ATTENDANCE POPUP
 ========================================================= -->
 
 <div
   id="attendanceOverlay"
   class="attendance-overlay"
 >
-
 
   <div class="attendance-card">
 
@@ -1016,8 +953,6 @@ body {
 
     </div>
 
-
-    <!-- NO CHECKMARK HERE -->
 
     <button
       id="closeAttendanceButton"
@@ -1099,6 +1034,7 @@ async function startCamera() {
 
   closeAttendance();
 
+
   try {
 
     if (
@@ -1121,11 +1057,9 @@ async function startCamera() {
       await navigator.mediaDevices.getUserMedia({
 
         video: {
-
           facingMode: {
             ideal: "environment"
           }
-
         },
 
         audio: false
@@ -1347,9 +1281,7 @@ qrFileInput.addEventListener(
 
 
     if (!file) {
-
       return;
-
     }
 
 
@@ -1453,9 +1385,7 @@ function loadImage(file) {
             objectURL
           );
 
-          resolve(
-            image
-          );
+          resolve(image);
 
         };
 
@@ -1541,7 +1471,7 @@ function processQRValue(value) {
 
 
 /* =========================================================
-   SEND ATTENDANCE
+   SEND ATTENDANCE TO APPS SCRIPT
 ========================================================= */
 
 function sendAttendance(qrId) {
@@ -1579,9 +1509,7 @@ function sendAttendance(qrId) {
     function(result) {
 
       if (finished) {
-
         return;
-
       }
 
 
@@ -1608,9 +1536,9 @@ function sendAttendance(qrId) {
 
       /*
         IMPORTANT:
-
-        alreadyPresent means
-        the API successfully responded.
+        alreadyPresent means the
+        Apps Script successfully
+        responded.
       */
 
       if (
@@ -1728,9 +1656,7 @@ function sendAttendance(qrId) {
     function() {
 
       if (finished) {
-
         return;
-
       }
 
 
@@ -1766,9 +1692,7 @@ function sendAttendance(qrId) {
       function() {
 
         if (finished) {
-
           return;
-
         }
 
 
@@ -1790,7 +1714,7 @@ function sendAttendance(qrId) {
 
 
 /* =========================================================
-   CONFIRMATION POPUP
+   ATTENDANCE CONFIRMED
 ========================================================= */
 
 function showAttendanceConfirmation(
@@ -1907,7 +1831,7 @@ function showAlreadyPresent(
 
 
 /* =========================================================
-   COUNTDOWN
+   60 SECOND COUNTDOWN
 ========================================================= */
 
 function startConfirmationCountdown() {
@@ -2040,7 +1964,7 @@ closeAttendanceButton
 
 
 /* =========================================================
-   ERROR
+   ERROR HANDLING
 ========================================================= */
 
 function showConnectionError(
@@ -2048,6 +1972,7 @@ function showConnectionError(
 ) {
 
   console.error(
+    "API connection error:",
     message
   );
 
@@ -2073,6 +1998,7 @@ function showAttendanceError(
 ) {
 
   console.warn(
+    "Attendance error:",
     message
   );
 
