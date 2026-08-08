@@ -1,450 +1,770 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
-  <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-  >
-
-  <title>XO+ Attendance</title>
-
-  <!-- QR DECODER -->
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-
-  <style>
-
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    html,
-    body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      min-height: 100%;
-      font-family: Arial, Helvetica, sans-serif;
-      background: #eef1f7;
-      color: #111;
-    }
-
-    body {
-      display: flex;
-      justify-content: center;
-      min-height: 100vh;
-    }
-
-    .app {
-      width: 100%;
-      max-width: 650px;
-      padding: 22px 18px 40px;
-    }
-
-    /* =========================
-       HEADER
-    ========================= */
-
-    .header {
-      text-align: center;
-      margin-bottom: 18px;
-    }
-
-    .header-title {
-      margin: 0;
-      font-size: 29px;
-      font-weight: 800;
-      letter-spacing: -0.7px;
-    }
-
-    .header-subtitle {
-      margin: 4px 0 0;
-      font-size: 16px;
-      color: #555;
-    }
-
-    /* =========================
-       CAMERA AREA
-    ========================= */
-
-    .camera-container {
-      position: relative;
-      width: 100%;
-      height: 350px;
-      background: #050505;
-      border-radius: 25px;
-      overflow: hidden;
-      border: 3px solid #d8d8d8;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-    }
-
-    #video {
-      width: 100%;
-      height: 100%;
-      display: block;
-      object-fit: cover;
-      background: #050505;
-    }
-
-    /* QR scanning frame */
-
-    #scanBox {
-      position: absolute;
-      width: 76%;
-      height: 76%;
-      max-width: 360px;
-      max-height: 300px;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      border: 3px solid white;
-      border-radius: 25px;
-      pointer-events: none;
-    }
-
-    #scanBox::after {
-      content: "";
-      position: absolute;
-      left: 10%;
-      right: 10%;
-      top: 50%;
-      height: 3px;
-      background: rgba(255,255,255,0.95);
-      box-shadow: 0 0 10px rgba(255,255,255,0.75);
-    }
-
-    /* =========================
-       BUTTONS
-    ========================= */
-
-    .button-group {
-      margin-top: 20px;
-    }
-
-    button {
-      width: 100%;
-      border: none;
-      border-radius: 20px;
-      min-height: 58px;
-      padding: 14px 18px;
-      font-size: 18px;
-      font-weight: 700;
-      cursor: pointer;
-      transition:
-        transform 0.12s ease,
-        opacity 0.12s ease,
-        box-shadow 0.12s ease;
-      color: white;
-    }
-
-    button:active {
-      transform: scale(0.98);
-    }
-
-    button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-
-    #startButton {
-      background: #151b2b;
-      box-shadow: 0 5px 12px rgba(21,27,43,0.18);
-    }
-
-    #stopButton {
-      background: #df2020;
-      margin-top: 16px;
-      box-shadow: 0 5px 12px rgba(223,32,32,0.18);
-    }
-
-    #uploadButton {
-      background: #2864dc;
-      margin-top: 16px;
-      box-shadow: 0 5px 12px rgba(40,100,220,0.18);
-    }
-
-    /* =========================
-       STATUS
-    ========================= */
-
-    .camera-status {
-      text-align: center;
-      margin-top: 14px;
-      min-height: 22px;
-      color: #666;
-      font-size: 15px;
-    }
-
-    /* =========================
-       RESULT CARD
-    ========================= */
-
-    .result-card {
-      margin-top: 18px;
-      background: white;
-      border-radius: 24px;
-      padding: 28px 20px;
-      text-align: center;
-      box-shadow: 0 7px 25px rgba(0,0,0,0.08);
-    }
-
-    #statusMessage {
-      font-size: 19px;
-      font-weight: 700;
-      color: #333;
-      line-height: 1.5;
-    }
-
-    /* =========================
-       ERROR
-    ========================= */
-
-    .error-card {
-      display: none;
-      margin-top: 18px;
-      background: white;
-      border-radius: 24px;
-      padding: 30px 20px;
-      text-align: center;
-      box-shadow: 0 7px 25px rgba(0,0,0,0.08);
-    }
-
-    .error-card.show {
-      display: block;
-    }
-
-    .error-icon {
-      color: #d52b2b;
-      font-size: 48px;
-      font-weight: 800;
-      margin-bottom: 8px;
-    }
-
-    .error-title {
-      color: #c92929;
-      font-size: 24px;
-      font-weight: 800;
-      line-height: 1.25;
-    }
-
-    .error-text {
-      margin-top: 20px;
-      color: #c92929;
-      font-size: 17px;
-      font-weight: 700;
-      line-height: 1.5;
-    }
-
-    /* =========================
-       ATTENDANCE CONFIRMATION
-    ========================= */
-
-    .attendance-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      background: rgba(0,0,0,0.55);
-      backdrop-filter: blur(4px);
-    }
-
-    .attendance-overlay.show {
-      display: flex;
-    }
-
-    .attendance-card {
-      width: 100%;
-      max-width: 470px;
-      background: white;
-      border-radius: 28px;
-      padding: 30px 22px 24px;
-      text-align: center;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      animation: popupIn 0.2s ease-out;
-    }
-
-    @keyframes popupIn {
-      from {
-        opacity: 0;
-        transform: scale(0.92);
-      }
-
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-
-    .success-icon {
-      width: 70px;
-      height: 70px;
-      margin: 0 auto 14px;
-      border-radius: 50%;
-      background: #20a84a;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 42px;
-      font-weight: 800;
-    }
-
-    .attendance-title {
-      margin: 0;
-      font-size: 27px;
-      color: #16863b;
-      font-weight: 800;
-    }
-
-    .attendance-name {
-      margin-top: 18px;
-      font-size: 25px;
-      font-weight: 800;
-      color: #111;
-      line-height: 1.25;
-      word-break: break-word;
-    }
-
-    .attendance-qr {
-      margin-top: 9px;
-      font-size: 17px;
-      font-weight: 700;
-      color: #555;
-    }
-
-    .attendance-time {
-      margin-top: 10px;
-      font-size: 17px;
-      color: #555;
-    }
-
-    .confirmation-message {
-      margin-top: 15px;
-      font-size: 16px;
-      font-weight: 600;
-      color: #333;
-    }
-
-    .countdown-wrap {
-      margin-top: 22px;
-    }
-
-    .countdown-label {
-      font-size: 13px;
-      color: #777;
-    }
-
-    .countdown {
-      margin-top: 5px;
-      font-size: 20px;
-      font-weight: 800;
-      color: #222;
-    }
-
-    .progress-track {
-      width: 100%;
-      height: 7px;
-      margin-top: 10px;
-      background: #e5e5e5;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
-    #confirmationProgress {
-      width: 100%;
-      height: 100%;
-      background: #20a84a;
-      transform-origin: left center;
-    }
-
-    #closeAttendanceButton {
-      margin-top: 22px;
-      background: #151b2b;
-      min-height: 54px;
-      font-size: 17px;
-    }
-
-    /* =========================
-       MOBILE
-    ========================= */
-
-    @media (max-width: 480px) {
-
-      .app {
-        padding: 18px 18px 35px;
-      }
-
-      .header-title {
-        font-size: 27px;
-      }
-
-      .camera-container {
-        height: 350px;
-        border-radius: 24px;
-      }
-
-      #scanBox {
-        width: 76%;
-        height: 76%;
-      }
-
-      button {
-        min-height: 56px;
-        font-size: 17px;
-      }
-
-      .attendance-card {
-        padding: 26px 18px 22px;
-      }
-
-      .attendance-name {
-        font-size: 22px;
-      }
-    }
-
-  </style>
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+>
+
+<title>XO+ Attendance</title>
+
+
+<!-- QR SCANNER LIBRARY -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  background:
+    linear-gradient(
+      180deg,
+      #f7f8fc 0%,
+      #eef1f8 100%
+    );
+
+  color: #111;
+
+  -webkit-font-smoothing: antialiased;
+
+  overflow-x: hidden;
+}
+
+
+/********************************************************
+ HEADER
+********************************************************/
+
+.header {
+
+  text-align: center;
+
+  padding:
+    28px
+    20px
+    14px;
+}
+
+
+.header-title {
+
+  margin: 0;
+
+  font-size: 30px;
+
+  font-weight: 800;
+
+  letter-spacing: -1px;
+}
+
+
+.header-subtitle {
+
+  margin:
+    3px
+    0
+    0;
+
+  font-size: 17px;
+
+  color: #555;
+}
+
+
+/********************************************************
+ MAIN CONTAINER
+********************************************************/
+
+.container {
+
+  width: min(
+    100% - 40px,
+    760px
+  );
+
+  margin:
+    0
+    auto
+    35px;
+}
+
+
+/********************************************************
+ CAMERA BOX
+********************************************************/
+
+.scanner-wrapper {
+
+  position: relative;
+
+  width: 100%;
+
+  background: #050505;
+
+  border-radius: 26px;
+
+  padding: 22px;
+
+  box-shadow:
+    0 8px 25px
+    rgba(0,0,0,0.16);
+
+  overflow: hidden;
+}
+
+
+#reader {
+
+  width: 100%;
+
+  min-height: 360px;
+
+  background: #050505;
+
+  border-radius: 20px;
+
+  overflow: hidden;
+}
+
+
+/*
+Hide unnecessary html5-qrcode UI.
+We create our own buttons below.
+*/
+
+#reader img {
+  display: none !important;
+}
+
+#reader button {
+  display: none !important;
+}
+
+#reader select {
+  display: none !important;
+}
+
+
+/********************************************************
+ SCAN BOX
+********************************************************/
+
+.scan-overlay {
+
+  position: absolute;
+
+  top: 22px;
+  left: 22px;
+  right: 22px;
+  bottom: 22px;
+
+  pointer-events: none;
+
+  border:
+    3px solid
+    rgba(255,255,255,0.95);
+
+  border-radius: 25px;
+}
+
+
+.scan-line {
+
+  position: absolute;
+
+  left: 14%;
+
+  right: 14%;
+
+  top: 50%;
+
+  height: 3px;
+
+  background: #fff;
+
+  box-shadow:
+    0 0 12px
+    rgba(255,255,255,0.85);
+
+  transform:
+    translateY(-50%);
+}
+
+
+/********************************************************
+ BUTTONS
+********************************************************/
+
+.button-group {
+
+  margin-top: 10px;
+}
+
+
+.action-button {
+
+  width: 100%;
+
+  height: 58px;
+
+  border: none;
+
+  border-radius: 18px;
+
+  margin-top: 14px;
+
+  font-size: 18px;
+
+  font-weight: 700;
+
+  color: white;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.12s ease,
+    opacity 0.12s ease;
+
+  -webkit-tap-highlight-color:
+    transparent;
+}
+
+
+.action-button:active {
+
+  transform: scale(0.98);
+}
+
+
+.action-button:disabled {
+
+  opacity: 0.55;
+
+  cursor: not-allowed;
+}
+
+
+.start-button {
+
+  background:
+    #151b2c;
+}
+
+
+.stop-button {
+
+  background:
+    #e51c23;
+}
+
+
+.upload-button {
+
+  background:
+    #2864dc;
+}
+
+
+/********************************************************
+ STATUS
+********************************************************/
+
+.camera-status {
+
+  text-align: center;
+
+  margin-top: 12px;
+
+  min-height: 24px;
+
+  font-size: 16px;
+
+  color: #666;
+}
+
+
+/********************************************************
+ RESULT AREA
+********************************************************/
+
+.result-area {
+
+  margin-top: 18px;
+}
+
+
+/********************************************************
+ NORMAL STATUS CARD
+********************************************************/
+
+.status-card {
+
+  background: white;
+
+  border-radius: 25px;
+
+  padding: 28px 20px;
+
+  text-align: center;
+
+  box-shadow:
+    0 5px 20px
+    rgba(0,0,0,0.06);
+}
+
+
+.status-card.hidden {
+
+  display: none;
+}
+
+
+.status-title {
+
+  margin: 0;
+
+  font-size: 22px;
+
+  font-weight: 800;
+}
+
+
+.status-message {
+
+  margin-top: 14px;
+
+  font-size: 17px;
+
+  line-height: 1.5;
+
+  color: #555;
+}
+
+
+/********************************************************
+ ERROR
+********************************************************/
+
+.error-card {
+
+  background: white;
+
+  border-radius: 25px;
+
+  padding: 28px 22px;
+
+  text-align: center;
+
+  box-shadow:
+    0 5px 20px
+    rgba(0,0,0,0.07);
+
+  border-top:
+    5px solid
+    #d92828;
+}
+
+
+.error-card.hidden {
+
+  display: none;
+}
+
+
+.error-icon {
+
+  font-size: 48px;
+
+  color: #d92828;
+
+  font-weight: 900;
+
+  line-height: 1;
+}
+
+
+.error-title {
+
+  margin:
+    12px
+    0
+    0;
+
+  color: #c92828;
+
+  font-size: 24px;
+
+  font-weight: 800;
+}
+
+
+.error-message {
+
+  margin-top: 16px;
+
+  color: #b52a2a;
+
+  font-size: 17px;
+
+  line-height: 1.5;
+
+  font-weight: 600;
+}
+
+
+/********************************************************
+ ATTENDANCE CONFIRMATION
+********************************************************/
+
+.attendance-card {
+
+  background: white;
+
+  border-radius: 28px;
+
+  padding: 30px 22px;
+
+  text-align: center;
+
+  box-shadow:
+    0 10px 35px
+    rgba(0,0,0,0.10);
+
+  border-top:
+    6px solid
+    #20a85a;
+}
+
+
+.attendance-card.hidden {
+
+  display: none;
+}
+
+
+.success-icon {
+
+  width: 70px;
+
+  height: 70px;
+
+  margin:
+    0
+    auto
+    15px;
+
+  border-radius: 50%;
+
+  background:
+    #20a85a;
+
+  color: white;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 42px;
+
+  font-weight: 800;
+}
+
+
+.attendance-title {
+
+  margin: 0;
+
+  color: #178247;
+
+  font-size: 27px;
+
+  font-weight: 800;
+}
+
+
+.attendance-name {
+
+  margin-top: 18px;
+
+  font-size: 25px;
+
+  font-weight: 800;
+
+  color: #111;
+
+  line-height: 1.25;
+
+  word-break: break-word;
+}
+
+
+.attendance-qr {
+
+  margin-top: 8px;
+
+  font-size: 17px;
+
+  font-weight: 700;
+
+  color: #555;
+}
+
+
+.attendance-time {
+
+  margin-top: 12px;
+
+  font-size: 17px;
+
+  color: #555;
+}
+
+
+.confirmation-message {
+
+  margin-top: 14px;
+
+  color: #178247;
+
+  font-weight: 700;
+
+  font-size: 16px;
+}
+
+
+/********************************************************
+ COUNTDOWN
+********************************************************/
+
+.countdown-wrap {
+
+  margin-top: 24px;
+}
+
+
+.countdown-label {
+
+  font-size: 14px;
+
+  color: #777;
+}
+
+
+.countdown {
+
+  margin-top: 7px;
+
+  font-size: 22px;
+
+  font-weight: 800;
+
+  color: #178247;
+}
+
+
+.progress-track {
+
+  width: 100%;
+
+  height: 8px;
+
+  margin-top: 10px;
+
+  border-radius: 20px;
+
+  background: #e5e5e5;
+
+  overflow: hidden;
+}
+
+
+#confirmationProgress {
+
+  width: 100%;
+
+  height: 100%;
+
+  background: #20a85a;
+
+  transition:
+    width 1s linear;
+}
+
+
+/********************************************************
+ DONE BUTTON
+********************************************************/
+
+.close-attendance-button {
+
+  width: 100%;
+
+  height: 56px;
+
+  margin-top: 22px;
+
+  border: none;
+
+  border-radius: 16px;
+
+  background: #151b2c;
+
+  color: white;
+
+  font-size: 17px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+/********************************************************
+ HIDDEN FILE INPUT
+********************************************************/
+
+#qrFileInput {
+
+  display: none;
+}
+
+
+/********************************************************
+ MOBILE
+********************************************************/
+
+@media (max-width: 600px) {
+
+  .header {
+
+    padding-top: 24px;
+  }
+
+
+  .header-title {
+
+    font-size: 27px;
+  }
+
+
+  .header-subtitle {
+
+    font-size: 16px;
+  }
+
+
+  .container {
+
+    width:
+      calc(100% - 40px);
+  }
+
+
+  .scanner-wrapper {
+
+    padding: 18px;
+
+    border-radius: 23px;
+  }
+
+
+  #reader {
+
+    min-height: 300px;
+
+    border-radius: 18px;
+  }
+
+
+  .scan-overlay {
+
+    top: 18px;
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+
+    border-radius: 20px;
+  }
+
+
+  .action-button {
+
+    height: 56px;
+
+    font-size: 17px;
+
+    margin-top: 14px;
+  }
+
+
+  .attendance-name {
+
+    font-size: 23px;
+  }
+}
+
+</style>
 
 </head>
 
+
 <body>
 
-<div class="app">
 
-  <!-- HEADER -->
+<!-- HEADER -->
 
-  <div class="header">
+<header class="header">
 
-    <h1 class="header-title">
-      XO+ Attendance
-    </h1>
+  <h1 class="header-title">
+    XO+ Attendance
+  </h1>
 
-    <div class="header-subtitle">
-      Scan the attendee's QR Code
+  <p class="header-subtitle">
+    Scan the attendee's QR Code
+  </p>
+
+</header>
+
+
+<main class="container">
+
+
+  <!-- SCANNER -->
+
+  <section class="scanner-wrapper">
+
+    <div id="reader"></div>
+
+    <div class="scan-overlay">
+
+      <div class="scan-line"></div>
+
     </div>
 
-  </div>
-
-
-  <!-- CAMERA -->
-
-  <div class="camera-container">
-
-    <video
-      id="video"
-      autoplay
-      playsinline
-      muted
-    ></video>
-
-    <div id="scanBox"></div>
-
-  </div>
+  </section>
 
 
   <!-- BUTTONS -->
@@ -453,6 +773,7 @@
 
     <button
       id="startButton"
+      class="action-button start-button"
       type="button"
     >
       Start Camera
@@ -461,6 +782,7 @@
 
     <button
       id="stopButton"
+      class="action-button stop-button"
       type="button"
     >
       Stop Camera
@@ -469,6 +791,7 @@
 
     <button
       id="uploadButton"
+      class="action-button upload-button"
       type="button"
     >
       Upload QR from Gallery
@@ -479,7 +802,6 @@
       id="qrFileInput"
       type="file"
       accept="image/*"
-      hidden
     >
 
   </div>
@@ -495,145 +817,175 @@
   </div>
 
 
-  <!-- MAIN STATUS -->
+  <!-- RESULTS -->
 
-  <div class="result-card">
-
-    <div id="statusMessage">
-      Ready to scan...
-    </div>
-
-  </div>
+  <div class="result-area">
 
 
-  <!-- ERROR CARD -->
-
-  <div
-    id="errorCard"
-    class="error-card"
-  >
-
-    <div class="error-icon">
-      ×
-    </div>
-
-    <div class="error-title">
-      Unable to connect to attendance system.
-    </div>
+    <!-- NORMAL STATUS -->
 
     <div
-      id="errorText"
-      class="error-text"
+      id="statusCard"
+      class="status-card"
     >
-      The QR was detected, but the Apps Script API could not be loaded.
-    </div>
 
-  </div>
-
-</div>
-
-
-<!-- =========================================
-     ATTENDANCE CONFIRMATION
-========================================= -->
-
-<div
-  id="attendanceOverlay"
-  class="attendance-overlay"
->
-
-  <div class="attendance-card">
-
-    <div class="success-icon">
-      ✓
-    </div>
-
-    <h2
-      id="attendanceTitle"
-      class="attendance-title"
-    >
-      Attendance Confirmed!
-    </h2>
-
-    <div
-      id="attendanceName"
-      class="attendance-name"
-    >
-      Attendee
-    </div>
-
-    <div
-      id="attendanceQr"
-      class="attendance-qr"
-    >
-      XO-0000
-    </div>
-
-    <div
-      id="attendanceTime"
-      class="attendance-time"
-    >
-      Checked in at --
-    </div>
-
-    <div
-      id="attendanceMessage"
-      class="confirmation-message"
-    >
-      Attendance recorded successfully.
-    </div>
-
-    <div class="countdown-wrap">
-
-      <div class="countdown-label">
-        This confirmation will close automatically
+      <div
+        id="statusTitle"
+        class="status-title"
+      >
+        Ready to scan...
       </div>
 
       <div
-        id="confirmationCountdown"
-        class="countdown"
+        id="statusMessage"
+        class="status-message"
       >
-        60 seconds
-      </div>
-
-      <div class="progress-track">
-
-        <div
-          id="confirmationProgress"
-        ></div>
-
+        Start the camera or upload a QR image.
       </div>
 
     </div>
 
-    <button
-      id="closeAttendanceButton"
-      type="button"
+
+    <!-- ERROR -->
+
+    <div
+      id="errorCard"
+      class="error-card hidden"
     >
-      Done — Continue Scanning
-    </button>
+
+      <div class="error-icon">
+        ×
+      </div>
+
+      <h2 class="error-title">
+        Unable to connect to attendance system.
+      </h2>
+
+      <div
+        id="errorMessage"
+        class="error-message"
+      >
+        Please try again.
+      </div>
+
+    </div>
+
+
+    <!-- ATTENDANCE CONFIRMATION -->
+
+    <div
+      id="attendanceCard"
+      class="attendance-card hidden"
+    >
+
+      <div class="success-icon">
+        ✓
+      </div>
+
+      <h2 class="attendance-title">
+        Attendance Confirmed!
+      </h2>
+
+
+      <div
+        id="attendanceName"
+        class="attendance-name"
+      >
+        Attendee
+      </div>
+
+
+      <div
+        id="attendanceQr"
+        class="attendance-qr"
+      >
+        XO-0000
+      </div>
+
+
+      <div
+        id="attendanceTime"
+        class="attendance-time"
+      >
+        Checked in at --
+      </div>
+
+
+      <div
+        id="attendanceMessage"
+        class="confirmation-message"
+      >
+        Attendance recorded successfully.
+      </div>
+
+
+      <div class="countdown-wrap">
+
+        <div class="countdown-label">
+          This confirmation will close automatically
+        </div>
+
+
+        <div
+          id="confirmationCountdown"
+          class="countdown"
+        >
+          60 seconds
+        </div>
+
+
+        <div class="progress-track">
+
+          <div
+            id="confirmationProgress"
+          ></div>
+
+        </div>
+
+      </div>
+
+
+      <button
+        id="closeAttendanceButton"
+        class="close-attendance-button"
+        type="button"
+      >
+        Done — Continue Scanning
+      </button>
+
+    </div>
 
   </div>
 
-</div>
+</main>
 
 
 <script>
 
-/* =========================================================
-   XO+ ATTENDANCE CONFIGURATION
-========================================================= */
+/************************************************************
+ * XO+ ATTENDANCE SCANNER
+ ************************************************************/
+
+
+/*
+ * IMPORTANT
+ *
+ * Replace the value below with your current Apps Script
+ * Web App /exec URL.
+ *
+ * Use the exact URL from your Apps Script deployment.
+ */
 
 const API_URL =
   "https://script.google.com/macros/s/AKfycbx5BJw5IE7VtLSHOt5GjPbPfvn897a407iLhZ581s5kkWn8u3ztBzgG_pRmT0eAFvJf/exec";
 
 
-/* =========================================================
-   ELEMENTS
-========================================================= */
+/************************************************************
+ * ELEMENTS
+ ************************************************************/
 
-const video =
-  document.getElementById("video");
+const readerElement =
+  document.getElementById("reader");
 
 const startButton =
   document.getElementById("startButton");
@@ -650,20 +1002,23 @@ const qrFileInput =
 const cameraStatus =
   document.getElementById("cameraStatus");
 
+const statusCard =
+  document.getElementById("statusCard");
+
+const statusTitle =
+  document.getElementById("statusTitle");
+
 const statusMessage =
   document.getElementById("statusMessage");
 
 const errorCard =
   document.getElementById("errorCard");
 
-const errorText =
-  document.getElementById("errorText");
+const errorMessage =
+  document.getElementById("errorMessage");
 
-
-/* Attendance */
-
-const attendanceOverlay =
-  document.getElementById("attendanceOverlay");
+const attendanceCard =
+  document.getElementById("attendanceCard");
 
 const attendanceName =
   document.getElementById("attendanceName");
@@ -678,153 +1033,227 @@ const attendanceMessage =
   document.getElementById("attendanceMessage");
 
 const confirmationCountdown =
-  document.getElementById("confirmationCountdown");
+  document.getElementById(
+    "confirmationCountdown"
+  );
 
 const confirmationProgress =
-  document.getElementById("confirmationProgress");
+  document.getElementById(
+    "confirmationProgress"
+  );
 
 const closeAttendanceButton =
-  document.getElementById("closeAttendanceButton");
+  document.getElementById(
+    "closeAttendanceButton"
+  );
 
 
-/* =========================================================
-   CAMERA VARIABLES
-========================================================= */
+/************************************************************
+ * VARIABLES
+ ************************************************************/
 
-let stream = null;
+let html5QrCode = null;
 
-let scanning = false;
-
-let animationFrame = null;
+let scannerRunning = false;
 
 let processingQR = false;
 
 let confirmationTimer = null;
 
-let confirmationStartTime = null;
-
-let lastScannedQR = "";
-
-let lastScannedTime = 0;
+let confirmationSeconds = 60;
 
 
-/* =========================================================
-   CANVAS
-========================================================= */
+/************************************************************
+ * INITIALIZE
+ ************************************************************/
 
-const canvas =
-  document.createElement("canvas");
+function initializeScanner() {
 
-const context =
-  canvas.getContext("2d", {
-    willReadFrequently: true
-  });
+  html5QrCode =
+    new Html5Qrcode("reader");
+
+}
 
 
-/* =========================================================
-   STATUS HELPERS
-========================================================= */
+initializeScanner();
 
-function setStatus(message) {
+
+/************************************************************
+ * UI HELPERS
+ ************************************************************/
+
+function hideAllResults() {
+
+  statusCard.classList.add("hidden");
+
+  errorCard.classList.add("hidden");
+
+  attendanceCard.classList.add("hidden");
+}
+
+
+function showStatus(title, message) {
+
+  hideAllResults();
+
+  statusCard.classList.remove("hidden");
+
+  statusTitle.textContent =
+    title || "Ready to scan...";
 
   statusMessage.textContent =
-    message;
-
+    message || "";
 }
 
 
 function showError(message) {
 
-  errorText.textContent =
+  hideAllResults();
+
+  errorCard.classList.remove("hidden");
+
+  errorMessage.textContent =
+    message ||
+    "Please try again.";
+}
+
+
+function showCameraStatus(message) {
+
+  cameraStatus.textContent =
     message;
-
-  errorCard.classList.add("show");
-
 }
 
 
-function hideError() {
-
-  errorCard.classList.remove("show");
-
-}
-
-
-/* =========================================================
-   START CAMERA
-========================================================= */
+/************************************************************
+ * START CAMERA
+ ************************************************************/
 
 async function startCamera() {
 
-  hideError();
+  if (scannerRunning) {
+    return;
+  }
+
+
+  hideAllResults();
+
+  showStatus(
+    "Starting camera...",
+    "Please allow camera permission if requested."
+  );
+
+
+  showCameraStatus(
+    "Requesting camera permission..."
+  );
+
 
   try {
 
-    if (!navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia) {
+    const cameras =
+      await Html5Qrcode.getCameras();
 
-      showError(
-        "Camera access is not supported by this browser. Please use the latest Chrome or Safari."
+
+    if (
+      !cameras ||
+      cameras.length === 0
+    ) {
+
+      throw new Error(
+        "No camera was found on this device."
       );
-
-      return;
     }
 
 
-    stopCamera();
+    /*
+     * Prefer the rear/back camera.
+     */
+
+    let cameraId =
+      cameras[0].id;
 
 
-    cameraStatus.textContent =
-      "Requesting camera permission...";
+    const backCamera =
+      cameras.find(function(camera) {
 
+        const label =
+          (
+            camera.label ||
+            ""
+          ).toLowerCase();
 
-    stream =
-      await navigator.mediaDevices.getUserMedia({
-
-        video: {
-          facingMode: {
-            ideal: "environment"
-          },
-
-          width: {
-            ideal: 1280
-          },
-
-          height: {
-            ideal: 720
-          }
-        },
-
-        audio: false
+        return (
+          label.includes("back") ||
+          label.includes("rear") ||
+          label.includes("environment")
+        );
 
       });
 
 
-    video.srcObject =
-      stream;
+    if (backCamera) {
+      cameraId =
+        backCamera.id;
+    }
 
 
-    await video.play();
+    await html5QrCode.start(
+
+      cameraId,
+
+      {
+        fps: 10,
+
+        qrbox: function(
+          viewfinderWidth,
+          viewfinderHeight
+        ) {
+
+          const size =
+            Math.floor(
+              Math.min(
+                viewfinderWidth,
+                viewfinderHeight
+              ) * 0.70
+            );
+
+          return {
+            width: size,
+            height: size
+          };
+        },
+
+        aspectRatio: 1.0,
+
+        disableFlip: false
+
+      },
+
+      onScanSuccess,
+
+      onScanFailure
+
+    );
 
 
-    scanning = true;
+    scannerRunning = true;
 
     processingQR = false;
 
 
-    cameraStatus.textContent =
-      "Camera ready — point it at the QR code.";
-
-    setStatus(
-      "Ready to scan..."
+    showCameraStatus(
+      "Camera ready — point it at the QR code."
     );
 
 
-    scanCameraFrame();
+    showStatus(
+      "Ready to scan...",
+      "Point the camera at the attendee's QR code."
+    );
 
-  }
 
-  catch (error) {
+  } catch (error) {
 
     console.error(
       "Camera error:",
@@ -832,297 +1261,353 @@ async function startCamera() {
     );
 
 
-    cameraStatus.textContent =
-      "Camera permission denied.";
+    showCameraStatus(
+      "Camera could not be started."
+    );
 
 
     showError(
-      "Unable to access the camera. Please allow camera permission for this website and try again."
+      getCameraErrorMessage(error)
     );
-
   }
-
 }
 
 
-/* =========================================================
-   STOP CAMERA
-========================================================= */
+/************************************************************
+ * CAMERA ERROR MESSAGE
+ ************************************************************/
 
-function stopCamera() {
+function getCameraErrorMessage(error) {
 
-  scanning = false;
-
-  processingQR = false;
-
-
-  if (animationFrame) {
-
-    cancelAnimationFrame(
-      animationFrame
+  const message =
+    String(
+      error &&
+      error.message
+        ? error.message
+        : error
     );
 
-    animationFrame = null;
 
+  if (
+    message.toLowerCase()
+      .includes("permission")
+  ) {
+
+    return (
+      "Camera permission was denied. " +
+      "Please allow camera access in your browser settings."
+    );
   }
 
 
-  if (stream) {
+  if (
+    message.toLowerCase()
+      .includes("not found")
+  ) {
 
-    stream
-      .getTracks()
-      .forEach(track => {
-        track.stop();
-      });
-
-    stream = null;
-
+    return (
+      "No camera was found on this device."
+    );
   }
 
 
-  video.srcObject = null;
-
-
-  cameraStatus.textContent =
-    "Camera not started.";
-
+  return (
+    "Unable to start the camera. " +
+    "Please check your browser camera permission."
+  );
 }
 
 
-/* =========================================================
-   CAMERA QR SCANNER
-========================================================= */
+/************************************************************
+ * STOP CAMERA
+ ************************************************************/
 
-function scanCameraFrame() {
+async function stopCamera() {
 
-  if (!scanning) {
+  if (!html5QrCode) {
     return;
   }
 
-
-  if (
-    video.readyState >= 2 &&
-    video.videoWidth > 0 &&
-    video.videoHeight > 0 &&
-    !processingQR &&
-    !attendanceOverlay.classList.contains("show")
-  ) {
-
-    canvas.width =
-      video.videoWidth;
-
-    canvas.height =
-      video.videoHeight;
-
-
-    context.drawImage(
-      video,
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    );
-
-
-    const imageData =
-      context.getImageData(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
-
-
-    const code =
-      jsQR(
-        imageData.data,
-        imageData.width,
-        imageData.height,
-        {
-          inversionAttempts:
-            "attemptBoth"
-        }
-      );
-
-
-    if (code && code.data) {
-
-      const qrValue =
-        String(code.data).trim();
-
-
-      if (qrValue) {
-
-        processScannedQR(
-          qrValue
-        );
-
-      }
-
-    }
-
-  }
-
-
-  animationFrame =
-    requestAnimationFrame(
-      scanCameraFrame
-    );
-
-}
-
-
-/* =========================================================
-   QR VALIDATION
-========================================================= */
-
-function cleanQRValue(value) {
-
-  let qr =
-    String(value || "").trim();
-
-
-  /*
-   * Your QR codes are normally:
-   * XO-0001
-   */
-
-  if (
-    /^XO-\d+$/i.test(qr)
-  ) {
-
-    return qr.toUpperCase();
-
-  }
-
-
-  /*
-   * If QR contains a URL with qrId,
-   * try to extract it.
-   */
 
   try {
 
-    const url =
-      new URL(qr);
+    if (scannerRunning) {
 
+      await html5QrCode.stop();
 
-    const id =
-      url.searchParams.get(
-        "qrId"
-      );
-
-
-    if (id) {
-
-      return String(id)
-        .trim()
-        .toUpperCase();
-
+      scannerRunning = false;
     }
 
-  }
 
-  catch (e) {
-    // Not a URL
-  }
-
-
-  /*
-   * Search inside text
-   */
-
-  const match =
-    qr.match(
-      /XO-\d+/i
+    showCameraStatus(
+      "Camera stopped."
     );
 
 
-  if (match) {
+    showStatus(
+      "Ready to scan...",
+      "Start the camera or upload a QR image."
+    );
 
-    return match[0]
-      .toUpperCase();
 
+  } catch (error) {
+
+    console.error(
+      "Stop camera error:",
+      error
+    );
+
+    scannerRunning = false;
   }
-
-
-  return qr;
-
 }
 
 
-/* =========================================================
-   PROCESS QR
-========================================================= */
+/************************************************************
+ * QR SCAN SUCCESS
+ ************************************************************/
 
-function processScannedQR(rawQR) {
+async function onScanSuccess(
+  decodedText,
+  decodedResult
+) {
 
-  const qrId =
-    cleanQRValue(rawQR);
-
-
-  if (!qrId) {
+  if (processingQR) {
     return;
   }
-
-
-  /*
-   * Prevent repeatedly reading
-   * the same QR.
-   */
-
-  const now =
-    Date.now();
-
-
-  if (
-    qrId === lastScannedQR &&
-    now - lastScannedTime < 3000
-  ) {
-
-    return;
-
-  }
-
-
-  lastScannedQR =
-    qrId;
-
-  lastScannedTime =
-    now;
 
 
   processingQR = true;
 
 
-  setStatus(
-    "QR detected. Checking attendance..."
+  console.log(
+    "QR detected:",
+    decodedText
   );
 
 
-  hideError();
+  /*
+   * Stop camera immediately after QR detection.
+   */
+
+  if (scannerRunning) {
+
+    try {
+
+      await html5QrCode.stop();
+
+      scannerRunning = false;
+
+    } catch (error) {
+
+      console.warn(
+        "Camera stop warning:",
+        error
+      );
+    }
+  }
 
 
-  callAttendanceAPI(
-    qrId
+  showCameraStatus(
+    "QR detected — checking attendance..."
   );
 
+
+  processAttendance(
+    decodedText
+  );
 }
 
 
-/* =========================================================
-   GOOGLE APPS SCRIPT JSONP
-========================================================= */
+/************************************************************
+ * QR SCAN FAILURE
+ ************************************************************/
 
-function callAttendanceAPI(qrId) {
+function onScanFailure(errorMessage) {
 
   /*
-   * JSONP is intentionally used here.
+   * Do nothing.
    *
-   * This avoids browser CORS problems when
-   * GitHub Pages communicates with Google Apps Script.
+   * html5-qrcode calls this continuously while
+   * searching for a QR code.
+   */
+}
+
+
+/************************************************************
+ * UPLOAD QR FROM GALLERY
+ ************************************************************/
+
+uploadButton.addEventListener(
+  "click",
+  function() {
+
+    qrFileInput.value = "";
+
+    qrFileInput.click();
+
+  }
+);
+
+
+/************************************************************
+ * PROCESS UPLOADED QR IMAGE
+ ************************************************************/
+
+qrFileInput.addEventListener(
+  "change",
+  async function(event) {
+
+    const file =
+      event.target.files &&
+      event.target.files[0];
+
+
+    if (!file) {
+      return;
+    }
+
+
+    /*
+     * Stop camera first.
+     */
+
+    if (scannerRunning) {
+
+      await stopCamera();
+    }
+
+
+    processingQR = true;
+
+
+    showCameraStatus(
+      "Reading uploaded QR image..."
+    );
+
+
+    showStatus(
+      "Reading QR code...",
+      "Please wait."
+    );
+
+
+    try {
+
+      const decodedText =
+        await html5QrCode.scanFile(
+          file,
+          true
+        );
+
+
+      console.log(
+        "Uploaded QR detected:",
+        decodedText
+      );
+
+
+      showCameraStatus(
+        "QR detected — checking attendance..."
+      );
+
+
+      processAttendance(
+        decodedText
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "Gallery QR error:",
+        error
+      );
+
+
+      processingQR = false;
+
+
+      showCameraStatus(
+        "Could not read the uploaded QR image."
+      );
+
+
+      showError(
+        "QR code could not be detected in the selected image. " +
+        "Please upload a clear image containing the QR code."
+      );
+    }
+
+  }
+);
+
+
+/************************************************************
+ * SEND ATTENDANCE USING JSONP
+ *
+ * IMPORTANT:
+ * We intentionally DO NOT use fetch().
+ *
+ * Google Apps Script Web Apps can cause CORS problems
+ * when called directly from GitHub Pages.
+ *
+ * JSONP avoids that problem.
+ ************************************************************/
+
+function processAttendance(qrId) {
+
+  qrId =
+    String(qrId || "")
+      .trim();
+
+
+  if (!qrId) {
+
+    processingQR = false;
+
+    showError(
+      "No QR ID was detected."
+    );
+
+    return;
+  }
+
+
+  /*
+   * Sometimes scanners return a URL or text
+   * containing the QR ID.
+   *
+   * Extract XO-0001 if it exists.
    */
 
+  const match =
+    qrId.match(
+      /XO-\d{4}/i
+    );
+
+
+  if (match) {
+
+    qrId =
+      match[0];
+  }
+
+
+  console.log(
+    "Sending QR ID:",
+    qrId
+  );
+
+
+  showStatus(
+    "Checking attendance...",
+    "Connecting to attendance system."
+  );
+
+
+  /*
+   * Create unique JSONP callback.
+   */
 
   const callbackName =
     "xoAttendanceCallback_" +
@@ -1133,75 +1618,31 @@ function callAttendanceAPI(qrId) {
     );
 
 
-  let finished =
-    false;
-
-
   const script =
-    document.createElement("script");
+    document.createElement(
+      "script"
+    );
 
 
-  const timeout =
-    setTimeout(() => {
-
-      if (finished) {
-        return;
-      }
+  let finished = false;
 
 
-      finished = true;
-
-
-      cleanup();
-
-
-      processingQR =
-        false;
-
-
-      showError(
-        "The QR was detected, but the Apps Script API could not be loaded. Please check the Web App deployment and try again."
-      );
-
-
-      setStatus(
-        "Unable to connect to attendance system."
-      );
-
-    }, 15000);
-
-
-  window[callbackName] =
-    function(result) {
-
-      if (finished) {
-        return;
-      }
-
-
-      finished = true;
-
-
-      clearTimeout(
-        timeout
-      );
-
-
-      cleanup();
-
-
-      processingQR =
-        false;
-
-
-      handleAttendanceResponse(
-        result
-      );
-
-    };
-
+  /*
+   * Cleanup.
+   */
 
   function cleanup() {
+
+    if (
+      script &&
+      script.parentNode
+    ) {
+
+      script.parentNode.removeChild(
+        script
+      );
+    }
+
 
     try {
 
@@ -1209,28 +1650,190 @@ function callAttendanceAPI(qrId) {
         callbackName
       ];
 
-    }
-
-    catch (e) {
+    } catch (error) {
 
       window[
         callbackName
       ] = undefined;
+    }
+  }
 
+
+  /*
+   * Timeout.
+   */
+
+  const timeout =
+    setTimeout(
+      function() {
+
+        if (finished) {
+          return;
+        }
+
+
+        finished = true;
+
+        cleanup();
+
+
+        processingQR = false;
+
+
+        console.error(
+          "Apps Script API timeout."
+        );
+
+
+        showError(
+          "The Apps Script API did not respond. " +
+          "Please check your internet connection " +
+          "and try scanning again."
+        );
+
+
+        showCameraStatus(
+          "API connection timed out."
+        );
+
+      },
+      15000
+    );
+
+
+  /*
+   * JSONP callback.
+   */
+
+  window[
+    callbackName
+  ] = function(result) {
+
+    if (finished) {
+      return;
     }
 
+
+    finished = true;
+
+    clearTimeout(
+      timeout
+    );
+
+
+    cleanup();
+
+
+    console.log(
+      "Apps Script response:",
+      result
+    );
+
+
+    processingQR = false;
+
+
+    /*
+     * SUCCESS
+     */
 
     if (
-      script.parentNode
+      result &&
+      result.success === true
     ) {
 
-      script.parentNode.removeChild(
-        script
+      showAttendanceConfirmation(
+        result.name,
+        result.qrId,
+        result.time,
+        result.message
       );
 
+
+      return;
     }
 
-  }
+
+    /*
+     * ALREADY PRESENT
+     */
+
+    if (
+      result &&
+      result.alreadyPresent === true
+    ) {
+
+      showError(
+        result.message ||
+        (
+          result.name +
+          " is already checked in."
+        )
+      );
+
+
+      showCameraStatus(
+        "Attendance already recorded."
+      );
+
+
+      return;
+    }
+
+
+    /*
+     * OTHER SERVER ERROR
+     */
+
+    showError(
+      result &&
+      result.message
+        ? result.message
+        : "Attendance could not be recorded."
+    );
+
+
+    showCameraStatus(
+      "Attendance was not recorded."
+    );
+  };
+
+
+  /*
+   * Build API URL.
+   *
+   * IMPORTANT:
+   * API_URL must be your /exec URL.
+   */
+
+  const apiUrl =
+    API_URL +
+    "?action=attendance" +
+    "&qrId=" +
+    encodeURIComponent(qrId) +
+    "&callback=" +
+    encodeURIComponent(
+      callbackName
+    ) +
+    "&_=" +
+    Date.now();
+
+
+  console.log(
+    "Apps Script request:",
+    apiUrl
+  );
+
+
+  /*
+   * JSONP uses <script>.
+   */
+
+  script.src =
+    apiUrl;
+
+  script.async =
+    true;
 
 
   script.onerror =
@@ -1243,7 +1846,6 @@ function callAttendanceAPI(qrId) {
 
       finished = true;
 
-
       clearTimeout(
         timeout
       );
@@ -1252,274 +1854,97 @@ function callAttendanceAPI(qrId) {
       cleanup();
 
 
-      processingQR =
-        false;
+      processingQR = false;
+
+
+      console.error(
+        "Apps Script JSONP could not load."
+      );
 
 
       showError(
-        "The Apps Script API could not be loaded. Make sure the Web App is deployed as 'Anyone'."
+        "Unable to connect to attendance system. " +
+        "Please make sure the Apps Script Web App " +
+        "is deployed as Anyone."
       );
 
 
-      setStatus(
-        "Unable to connect to attendance system."
+      showCameraStatus(
+        "API connection failed."
       );
-
     };
 
 
-  const url =
-    API_URL +
-    "?action=attendance" +
-    "&qrId=" +
-    encodeURIComponent(qrId) +
-    "&callback=" +
-    encodeURIComponent(callbackName) +
-    "&_=" +
-    Date.now();
-
-
-  script.src =
-    url;
-
-
-  document.body.appendChild(
+  document.head.appendChild(
     script
   );
-
 }
 
 
-/* =========================================================
-   ATTENDANCE RESPONSE
-========================================================= */
-
-function handleAttendanceResponse(
-  result
-) {
-
-  console.log(
-    "Attendance API response:",
-    result
-  );
-
-
-  if (!result) {
-
-    showError(
-      "The attendance system returned an empty response."
-    );
-
-    setStatus(
-      "No response from attendance system."
-    );
-
-    return;
-
-  }
-
-
-  /* SUCCESS */
-
-  if (
-    result.success === true
-  ) {
-
-    showAttendanceConfirmation(
-      result
-    );
-
-    return;
-
-  }
-
-
-  /* ALREADY PRESENT */
-
-  if (
-    result.alreadyPresent === true
-  ) {
-
-    showAlreadyPresent(
-      result
-    );
-
-    return;
-
-  }
-
-
-  /* OTHER ERROR */
-
-  showError(
-    result.message ||
-    "QR code was not accepted."
-  );
-
-
-  setStatus(
-    result.message ||
-    "QR code not accepted."
-  );
-
-}
-
-
-/* =========================================================
-   ATTENDANCE CONFIRMATION
-========================================================= */
+/************************************************************
+ * ATTENDANCE CONFIRMATION
+ ************************************************************/
 
 function showAttendanceConfirmation(
-  result
+  name,
+  qrId,
+  time,
+  message
 ) {
 
-  hideError();
+  hideAllResults();
+
+
+  attendanceCard.classList.remove(
+    "hidden"
+  );
 
 
   /*
-   * FULL NAME
+   * WHOLE NAME
    */
 
   attendanceName.textContent =
-    result.name ||
+    name ||
     "Attendee";
 
 
   attendanceQr.textContent =
-    result.qrId ||
+    qrId ||
     "XO-0000";
 
 
   attendanceTime.textContent =
     "Checked in at " +
     (
-      result.time ||
+      time ||
       "--"
     );
 
 
   attendanceMessage.textContent =
-    result.message ||
+    message ||
     "Attendance recorded successfully.";
 
 
-  attendanceOverlay.classList.add(
-    "show"
+  showCameraStatus(
+    "Attendance recorded successfully."
   );
 
 
-  stopCamera();
-
-
   startConfirmationCountdown();
-
 }
 
 
-/* =========================================================
-   ALREADY PRESENT
-========================================================= */
-
-function showAlreadyPresent(
-  result
-) {
-
-  hideError();
-
-
-  attendanceName.textContent =
-    result.name ||
-    "Attendee";
-
-
-  attendanceQr.textContent =
-    result.qrId ||
-    "XO-0000";
-
-
-  attendanceTime.textContent =
-    result.message ||
-    "Already checked in.";
-
-
-  attendanceMessage.textContent =
-    "This attendee has already been marked present.";
-
-
-  document.getElementById(
-    "attendanceTitle"
-  ).textContent =
-    "Already Checked In";
-
-
-  document.querySelector(
-    ".success-icon"
-  ).textContent =
-    "!";
-
-
-  document.querySelector(
-    ".success-icon"
-  ).style.background =
-    "#e29b16";
-
-
-  document.querySelector(
-    ".attendance-title"
-  ).style.color =
-    "#b47700";
-
-
-  attendanceOverlay.classList.add(
-    "show"
-  );
-
-
-  stopCamera();
-
-
-  startConfirmationCountdown();
-
-}
-
-
-/* =========================================================
-   RESET CONFIRMATION STYLE
-========================================================= */
-
-function resetConfirmationStyle() {
-
-  document.getElementById(
-    "attendanceTitle"
-  ).textContent =
-    "Attendance Confirmed!";
-
-
-  document.querySelector(
-    ".success-icon"
-  ).textContent =
-    "✓";
-
-
-  document.querySelector(
-    ".success-icon"
-  ).style.background =
-    "#20a84a";
-
-
-  document.querySelector(
-    ".attendance-title"
-  ).style.color =
-    "#16863b";
-
-}
-
-
-/* =========================================================
-   60 SECOND COUNTDOWN
-========================================================= */
+/************************************************************
+ * 60 SECOND COUNTDOWN
+ ************************************************************/
 
 function startConfirmationCountdown() {
+
+  /*
+   * Clear previous timer.
+   */
 
   if (confirmationTimer) {
 
@@ -1527,89 +1952,83 @@ function startConfirmationCountdown() {
       confirmationTimer
     );
 
+    confirmationTimer =
+      null;
   }
 
 
-  confirmationStartTime =
-    Date.now();
+  confirmationSeconds =
+    60;
 
 
-  const duration =
-    60000;
-
-
-  confirmationProgress.style.width =
-    "100%";
-
-
-  confirmationCountdown.textContent =
-    "60 seconds";
+  updateCountdownUI();
 
 
   confirmationTimer =
-    setInterval(() => {
+    setInterval(
+      function() {
 
-      const elapsed =
-        Date.now() -
-        confirmationStartTime;
+        confirmationSeconds--;
 
-
-      const remaining =
-        Math.max(
-          0,
-          duration - elapsed
-        );
+        updateCountdownUI();
 
 
-      const seconds =
-        Math.ceil(
-          remaining / 1000
-        );
+        if (
+          confirmationSeconds <= 0
+        ) {
+
+          clearInterval(
+            confirmationTimer
+          );
 
 
-      confirmationCountdown.textContent =
-        seconds +
-        (
-          seconds === 1
-            ? " second"
-            : " seconds"
-        );
+          confirmationTimer =
+            null;
 
 
-      const percentage =
-        (
-          remaining /
-          duration
-        ) * 100;
+          closeAttendanceConfirmation();
+        }
 
-
-      confirmationProgress.style.width =
-        percentage + "%";
-
-
-      if (remaining <= 0) {
-
-        clearInterval(
-          confirmationTimer
-        );
-
-
-        confirmationTimer =
-          null;
-
-
-        closeAttendanceConfirmation();
-
-      }
-
-    }, 100);
-
+      },
+      1000
+    );
 }
 
 
-/* =========================================================
-   CLOSE CONFIRMATION
-========================================================= */
+/************************************************************
+ * COUNTDOWN UI
+ ************************************************************/
+
+function updateCountdownUI() {
+
+  confirmationCountdown.textContent =
+    confirmationSeconds +
+    (
+      confirmationSeconds === 1
+        ? " second"
+        : " seconds"
+    );
+
+
+  const percentage =
+    (
+      confirmationSeconds /
+      60
+    ) * 100;
+
+
+  confirmationProgress.style.width =
+    Math.max(
+      0,
+      percentage
+    ) +
+    "%";
+}
+
+
+/************************************************************
+ * CLOSE ATTENDANCE
+ ************************************************************/
 
 function closeAttendanceConfirmation() {
 
@@ -1621,372 +2040,33 @@ function closeAttendanceConfirmation() {
 
     confirmationTimer =
       null;
-
   }
 
 
-  attendanceOverlay.classList.remove(
-    "show"
+  attendanceCard.classList.add(
+    "hidden"
   );
-
-
-  resetConfirmationStyle();
-
-
-  confirmationProgress.style.width =
-    "100%";
-
-
-  confirmationCountdown.textContent =
-    "60 seconds";
 
 
   processingQR =
     false;
 
 
-  lastScannedQR =
-    "";
-
-
-  setStatus(
-    "Ready to scan..."
+  showStatus(
+    "Ready to scan...",
+    "Start the camera or upload a QR image."
   );
 
 
-  cameraStatus.textContent =
-    "Camera not started. Press Start Camera.";
-
-
-  /*
-   * Don't automatically start camera.
-   *
-   * This prevents unwanted camera activation
-   * on some Android/iPhone browsers.
-   */
-
+  showCameraStatus(
+    "Camera not started."
+  );
 }
 
 
-/* =========================================================
-   START BUTTON
-========================================================= */
-
-startButton.addEventListener(
-  "click",
-  function() {
-
-    startCamera();
-
-  }
-);
-
-
-/* =========================================================
-   STOP BUTTON
-========================================================= */
-
-stopButton.addEventListener(
-  "click",
-  function() {
-
-    stopCamera();
-
-
-    setStatus(
-      "Camera stopped."
-    );
-
-
-    cameraStatus.textContent =
-      "Camera stopped.";
-
-  }
-);
-
-
-/* =========================================================
-   UPLOAD QR FROM GALLERY
-========================================================= */
-
-uploadButton.addEventListener(
-  "click",
-  function() {
-
-    /*
-     * Reset value first.
-     *
-     * This allows the user to select
-     * the SAME image again.
-     */
-
-    qrFileInput.value =
-      "";
-
-
-    qrFileInput.click();
-
-  }
-);
-
-
-/* =========================================================
-   READ UPLOADED IMAGE
-========================================================= */
-
-qrFileInput.addEventListener(
-  "change",
-  function(event) {
-
-    const file =
-      event.target.files &&
-      event.target.files[0];
-
-
-    if (!file) {
-      return;
-    }
-
-
-    hideError();
-
-
-    setStatus(
-      "Reading uploaded QR image..."
-    );
-
-
-    cameraStatus.textContent =
-      "Processing QR image...";
-
-
-    processingQR =
-      true;
-
-
-    const reader =
-      new FileReader();
-
-
-    reader.onload =
-      function(e) {
-
-        const image =
-          new Image();
-
-
-        image.onload =
-          function() {
-
-            try {
-
-              /*
-               * Resize very large images
-               * for better mobile performance.
-               */
-
-              const maxSize =
-                1600;
-
-
-              let width =
-                image.naturalWidth;
-
-
-              let height =
-                image.naturalHeight;
-
-
-              if (
-                width > maxSize ||
-                height > maxSize
-              ) {
-
-                const scale =
-                  Math.min(
-                    maxSize / width,
-                    maxSize / height
-                  );
-
-
-                width =
-                  Math.floor(
-                    width * scale
-                  );
-
-
-                height =
-                  Math.floor(
-                    height * scale
-                  );
-
-              }
-
-
-              canvas.width =
-                width;
-
-              canvas.height =
-                height;
-
-
-              context.clearRect(
-                0,
-                0,
-                width,
-                height
-              );
-
-
-              context.drawImage(
-                image,
-                0,
-                0,
-                width,
-                height
-              );
-
-
-              const imageData =
-                context.getImageData(
-                  0,
-                  0,
-                  width,
-                  height
-                );
-
-
-              const code =
-                jsQR(
-                  imageData.data,
-                  imageData.width,
-                  imageData.height,
-                  {
-                    inversionAttempts:
-                      "attemptBoth"
-                  }
-                );
-
-
-              if (
-                code &&
-                code.data
-              ) {
-
-                processingQR =
-                  false;
-
-
-                processScannedQR(
-                  code.data
-                );
-
-              }
-
-              else {
-
-                processingQR =
-                  false;
-
-
-                setStatus(
-                  "No QR code found in the uploaded image."
-                );
-
-
-                cameraStatus.textContent =
-                  "Please upload a clear QR code image.";
-
-
-                showError(
-                  "No readable QR code was found. Please select a clear image showing the complete QR code."
-                );
-
-              }
-
-            }
-
-            catch (error) {
-
-              console.error(
-                "Image QR error:",
-                error
-              );
-
-
-              processingQR =
-                false;
-
-
-              showError(
-                "Unable to read the uploaded QR image."
-              );
-
-
-              setStatus(
-                "Unable to read QR image."
-              );
-
-            }
-
-          };
-
-
-        image.onerror =
-          function() {
-
-            processingQR =
-              false;
-
-
-            showError(
-              "The selected image could not be opened."
-            );
-
-
-            setStatus(
-              "Invalid image."
-            );
-
-          };
-
-
-        image.src =
-          e.target.result;
-
-      };
-
-
-    reader.onerror =
-      function() {
-
-        processingQR =
-          false;
-
-
-        showError(
-          "Unable to read the selected file."
-        );
-
-
-        setStatus(
-          "Unable to read image."
-        );
-
-      };
-
-
-    reader.readAsDataURL(
-      file
-    );
-
-  }
-);
-
-
-/* =========================================================
-   DONE BUTTON
-========================================================= */
+/************************************************************
+ * DONE BUTTON
+ ************************************************************/
 
 closeAttendanceButton.addEventListener(
   "click",
@@ -1998,17 +2078,58 @@ closeAttendanceButton.addEventListener(
 );
 
 
-/* =========================================================
-   INITIAL STATE
-========================================================= */
+/************************************************************
+ * BUTTON EVENTS
+ ************************************************************/
 
-stopCamera();
+startButton.addEventListener(
+  "click",
+  function() {
 
-setStatus(
-  "Ready to scan..."
+    processingQR =
+      false;
+
+    startCamera();
+
+  }
+);
+
+
+stopButton.addEventListener(
+  "click",
+  function() {
+
+    processingQR =
+      false;
+
+    stopCamera();
+
+  }
+);
+
+
+/************************************************************
+ * PAGE LOAD
+ ************************************************************/
+
+window.addEventListener(
+  "load",
+  function() {
+
+    showStatus(
+      "Ready to scan...",
+      "Start the camera or upload a QR image."
+    );
+
+    showCameraStatus(
+      "Camera not started."
+    );
+
+  }
 );
 
 </script>
 
 </body>
+
 </html>
