@@ -551,211 +551,234 @@ SEND ATTENDANCE TO APPS SCRIPT
 
 function sendAttendance(qrId) {
 
-
   const callbackName =
-    "attendanceCallback_" +
-    Date.now();
+    "attendanceCallback_" + Date.now();
 
+  let finished = false;
 
-  /*
-  Create JSONP callback
-  */
+  const script = document.createElement("script");
+  script.id = callbackName;
+  script.async = true;
 
-  window[callbackName] =
-    function(response) {
+  function cleanup() {
+    clearTimeout(timeout);
 
+    try {
+      delete window[callbackName];
+    } catch (e) {}
 
-      console.log(
-        "Apps Script response:",
-        response
-      );
+    const oldScript =
+      document.getElementById(callbackName);
 
+    if (oldScript) {
+      oldScript.remove();
+    }
+  }
 
-      if (
-        response.success
-      ) {
+  function finishAndResume() {
+    setTimeout(function() {
+      processingQR = false;
+      result.innerHTML = "Ready for next attendee...";
+      scanning = true;
+    }, 3500);
+  }
 
-        result.innerHTML =
+  const timeout = setTimeout(function() {
 
-          '<div class="success">' +
+    if (finished) return;
 
-          '🎉 ATTENDANCE CONFIRMED!' +
+    finished = true;
 
-          '<div class="name">' +
-
-          escapeHtml(
-            response.name
-          ) +
-
-          '</div>' +
-
-          '<div class="qrid">' +
-
-          escapeHtml(
-            response.qrId
-          ) +
-
-          '</div>' +
-
-          '<br>' +
-
-          '🕐 Checked in at ' +
-
-          escapeHtml(
-            response.time
-          ) +
-
-          '</div>';
-
-
-      } else {
-
-        result.innerHTML =
-
-          '<div class="error">' +
-
-          '⚠️ ' +
-
-          escapeHtml(
-            response.message
-          ) +
-
-          '</div>';
-
-      }
-
-
-      /*
-      Clean up callback
-      */
-
-      delete window[
-        callbackName
-      ];
-
-
-      const script =
-        document.getElementById(
-          callbackName
-        );
-
-
-      if (script) {
-        script.remove();
-      }
-
-
-      /*
-      Wait before next scan
-      */
-
-      setTimeout(
-        function() {
-
-          processingQR = false;
-
-          result.innerHTML =
-            "Ready for next attendee...";
-
-          scanning = true;
-
-        },
-        3500
-      );
-
-    };
-
-
-  /*
-  Create request
-  */
-
-  const script =
-    document.createElement(
-      "script"
+    console.error(
+      "Apps Script request timed out:",
+      script.src
     );
 
+    cleanup();
 
-  script.id =
-    callbackName;
+    result.innerHTML =
+      '<div class="error">' +
+      '❌ Attendance system timeout.' +
+      '<br><br>' +
+      '<small>' +
+      'The QR was detected, but Google Apps Script did not respond within 15 seconds.' +
+      '<br><br>' +
+      'Please check your internet connection and try again.' +
+      '</small>' +
+      '</div>';
+
+    processingQR = false;
+
+    setTimeout(function() {
+      scanning = true;
+    }, 3000);
+
+  }, 15000);
 
 
-  script.src =
-    API_URL +
+  // JSONP callback from Google Apps Script
+  window[callbackName] = function(response) {
 
-    "?action=attendance" +
+    if (finished) return;
 
-    "&qrId=" +
+    finished = true;
 
-    encodeURIComponent(qrId) +
-
-    "&callback=" +
-
-    encodeURIComponent(
-      callbackName
+    console.log(
+      "Apps Script response:",
+      response
     );
 
+    cleanup();
 
-  /*
-  Connection error
-  */
-
-  script.onerror =
-    function() {
-
-      console.error(
-        "Apps Script connection failed."
-      );
-
+    if (!response || typeof response !== "object") {
 
       result.innerHTML =
-
         '<div class="error">' +
+        '❌ Invalid response from attendance system.' +
+        '</div>';
 
-        '❌ Unable to connect to attendance system.' +
+      processingQR = false;
+
+      setTimeout(function() {
+        scanning = true;
+      }, 3000);
+
+      return;
+    }
+
+
+    // SUCCESS
+    if (response.success === true) {
+
+      result.innerHTML =
+        '<div class="success">' +
+        '🎉 ATTENDANCE CONFIRMED!' +
+
+        '<div class="name">' +
+        escapeHtml(response.name) +
+        '</div>' +
+
+        '<div class="qrid">' +
+        escapeHtml(response.qrId) +
+        '</div>' +
+
+        '<br>' +
+
+        '🕐 Checked in at ' +
+        escapeHtml(response.time || "") +
 
         '<br><br>' +
 
         '<small>' +
-
-        'The QR was detected, but Google Apps Script did not respond.'
-
-        +
-
+        escapeHtml(
+          response.message ||
+          "Attendance recorded successfully."
+        ) +
         '</small>' +
 
         '</div>';
 
-
-      delete window[
-        callbackName
-      ];
-
-
-      script.remove();
+      finishAndResume();
+      return;
+    }
 
 
-      processingQR = false;
+    // ALREADY PRESENT
+    if (response.alreadyPresent === true) {
+
+      result.innerHTML =
+        '<div class="error">' +
+        '⚠️ ALREADY CHECKED IN' +
+
+        '<div class="name">' +
+        escapeHtml(response.name || "") +
+        '</div>' +
+
+        '<div class="qrid">' +
+        escapeHtml(response.qrId || qrId) +
+        '</div>' +
+
+        '<br>' +
+
+        escapeHtml(
+          response.message ||
+          "This attendee is already checked in."
+        ) +
+
+        '</div>';
+
+      finishAndResume();
+      return;
+    }
 
 
-      setTimeout(
-        function() {
+    // OTHER API ERROR
+    result.innerHTML =
+      '<div class="error">' +
+      '❌ ATTENDANCE NOT RECORDED' +
+      '<br><br>' +
+      escapeHtml(
+        response.message ||
+        "The attendance request was rejected."
+      ) +
+      '</div>';
 
-          scanning = true;
-
-        },
-        3000
-      );
-
-    };
+    finishAndResume();
+  };
 
 
-  document.body.appendChild(
-    script
+  // JSONP request
+  script.src =
+    API_URL +
+    "?action=attendance" +
+    "&qrId=" +
+    encodeURIComponent(qrId) +
+    "&callback=" +
+    encodeURIComponent(callbackName) +
+    "&_=" +
+    Date.now();
+
+  console.log(
+    "Sending attendance request:",
+    script.src
   );
 
-}
 
+  // Network / script loading error
+  script.onerror = function() {
+
+    if (finished) return;
+
+    finished = true;
+
+    console.error(
+      "Apps Script connection failed:",
+      script.src
+    );
+
+    cleanup();
+
+    result.innerHTML =
+      '<div class="error">' +
+      '❌ Unable to connect to attendance system.' +
+      '<br><br>' +
+      '<small>' +
+      'The QR was detected, but the Apps Script API could not be loaded.' +
+      '<br><br>' +
+      'Please check the Apps Script Web App deployment.' +
+      '</small>' +
+      '</div>';
+
+    processingQR = false;
+
+    setTimeout(function() {
+      scanning = true;
+    }, 3000);
+  };
+
+
+  document.body.appendChild(script);
+}
 
 /*
 ====================================================
