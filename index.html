@@ -138,6 +138,7 @@
 
   </style>
 
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 </head>
 
 
@@ -177,14 +178,13 @@
   
 
     <button id="uploadButton" type="button">
-      🖼️ Upload QR Code
+      🖼️ Upload QR from Gallery
     </button>
 
     <input
       id="qrFileInput"
       type="file"
       accept="image/*"
-      capture="environment"
       hidden
     >
 </div>
@@ -842,43 +842,145 @@ async function uploadQRCode(file) {
 
   try {
 
-    if (!("BarcodeDetector" in window)) {
+    if (typeof jsQR !== "function") {
       throw new Error(
-        "QR image scanning is not supported by this browser. Please use a current Chrome browser or use the camera scanner."
+        "The QR image scanner could not load. Please check your internet connection and try again."
       );
     }
 
-    const imageDetector =
-      new BarcodeDetector({
-        formats: ["qr_code"]
+    const image =
+      await loadImageFromFile(file);
+
+    const canvas =
+      document.createElement("canvas");
+
+    const ctx =
+      canvas.getContext("2d", {
+        willReadFrequently: true
       });
 
-    let imageSource;
-
-    try {
-      imageSource = await createImageBitmap(file);
-    } catch (e) {
-      imageSource = await loadImageFromFile(file);
-    }
-
-    const barcodes =
-      await imageDetector.detect(imageSource);
-
-    if (
-      imageSource &&
-      typeof imageSource.close === "function"
-    ) {
-      imageSource.close();
-    }
-
-    if (!barcodes || barcodes.length === 0) {
+    if (!ctx) {
       throw new Error(
-        "No QR code was found in that image. Please upload a clear QR code image."
+        "Your browser could not prepare the uploaded image."
+      );
+    }
+
+    // Keep the image large enough for QR detection,
+    // but avoid creating an unnecessarily huge canvas.
+    const maxSize = 1800;
+
+    let width = image.naturalWidth || image.width;
+    let height = image.naturalHeight || image.height;
+
+    if (!width || !height) {
+      throw new Error(
+        "The uploaded image has no readable dimensions."
+      );
+    }
+
+    const scale =
+      Math.min(
+        1,
+        maxSize / Math.max(width, height)
+      );
+
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+
+    canvas.width = width;
+    canvas.height = height;
+
+    ctx.drawImage(
+      image,
+      0,
+      0,
+      width,
+      height
+    );
+
+    const imageData =
+      ctx.getImageData(
+        0,
+        0,
+        width,
+        height
+      );
+
+    let code =
+      jsQR(
+        imageData.data,
+        imageData.width,
+        imageData.height,
+        {
+          inversionAttempts:
+            "attemptBoth"
+        }
+      );
+
+    // Some phone photos have the QR small in the frame.
+    // Try a centered crop if the full image did not decode.
+    if (!code) {
+
+      const cropSize =
+        Math.min(width, height);
+
+      const cropX =
+        Math.floor((width - cropSize) / 2);
+
+      const cropY =
+        Math.floor((height - cropSize) / 2);
+
+      const cropCanvas =
+        document.createElement("canvas");
+
+      cropCanvas.width = cropSize;
+      cropCanvas.height = cropSize;
+
+      const cropCtx =
+        cropCanvas.getContext("2d", {
+          willReadFrequently: true
+        });
+
+      cropCtx.drawImage(
+        canvas,
+        cropX,
+        cropY,
+        cropSize,
+        cropSize,
+        0,
+        0,
+        cropSize,
+        cropSize
+      );
+
+      const cropData =
+        cropCtx.getImageData(
+          0,
+          0,
+          cropSize,
+          cropSize
+        );
+
+      code =
+        jsQR(
+          cropData.data,
+          cropData.width,
+          cropData.height,
+          {
+            inversionAttempts:
+              "attemptBoth"
+          }
+        );
+    }
+
+    if (!code || !code.data) {
+      throw new Error(
+        "No QR code was found in that image. Please select a clear saved QR image."
       );
     }
 
     const qrText =
-      String(barcodes[0].rawValue || "").trim();
+      String(code.data).trim();
 
     const qrId =
       extractXOQrId(qrText);
@@ -900,7 +1002,10 @@ async function uploadQRCode(file) {
 
   } catch (error) {
 
-    console.error("Uploaded QR error:", error);
+    console.error(
+      "Uploaded QR error:",
+      error
+    );
 
     result.innerHTML =
       '<div class="error">' +
@@ -908,7 +1013,7 @@ async function uploadQRCode(file) {
       '<br><br><small>' +
       escapeHtml(
         error.message ||
-        "Please upload a clear QR code image."
+        "Please select a clear QR code image."
       ) +
       '</small></div>';
 
@@ -921,6 +1026,8 @@ async function uploadQRCode(file) {
   } finally {
 
     uploadButton.disabled = false;
+
+    // Allows selecting the same image again.
     qrFileInput.value = "";
   }
 }
