@@ -1,104 +1,102 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
 
-  <title>XO+ Attendance</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
+  <title>XO+ Attendance Scanner</title>
+
+  <!-- QR Scanner -->
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
 
-    body {
-
-      font-family: Arial, sans-serif;
-
-      text-align: center;
-
-      padding: 20px;
-
-      background: #f5f5f5;
-
+    * {
+      box-sizing: border-box;
     }
 
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      text-align: center;
+    }
 
     h1 {
-
+      margin-top: 10px;
       margin-bottom: 5px;
-
       font-size: 32px;
-
     }
 
-
-    p {
-
-      font-size: 20px;
-
+    .subtitle {
+      color: #555;
+      font-size: 18px;
+      margin-bottom: 20px;
     }
-
 
     #reader {
-
       max-width: 500px;
-
-      margin: 20px auto;
-
+      margin: auto;
       background: white;
-
-      padding: 10px;
-
+      padding: 15px;
       border-radius: 15px;
-
-      box-shadow:
-        0 4px 15px
-        rgba(0,0,0,0.1);
-
+      box-shadow: 0 3px 15px rgba(0,0,0,0.10);
     }
-
 
     #result {
-
       max-width: 500px;
-
       margin: 20px auto;
-
       padding: 25px;
-
       background: white;
-
       border-radius: 15px;
-
       font-size: 20px;
-
+      box-shadow: 0 3px 15px rgba(0,0,0,0.08);
     }
-
 
     .success {
-
-      color: green;
-
+      color: #16803c;
       font-weight: bold;
-
     }
-
 
     .error {
-
-      color: red;
-
+      color: #d93025;
       font-weight: bold;
-
     }
 
-
-    .loading {
-
+    .checking {
       color: #555;
+      font-weight: bold;
+    }
 
+    .name {
+      font-size: 26px;
+      margin: 10px 0;
+    }
+
+    .qrid {
+      font-size: 18px;
+      color: #666;
+    }
+
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    #testButton {
+      margin-top: 10px;
+      background: #333;
+      color: white;
     }
 
   </style>
@@ -108,394 +106,228 @@
 
 <body>
 
-
   <h1>📱 XO+ Attendance</h1>
 
-  <p>Scan the attendee's QR Code</p>
-
+  <div class="subtitle">
+    Scan the attendee's QR Code
+  </div>
 
   <div id="reader"></div>
 
-
   <div id="result">
-
     Ready to scan...
-
   </div>
 
 
-<script>
+  <script>
+
+    /*
+     * IMPORTANT:
+     * Put your Google Apps Script Web App URL here.
+     */
+
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbzYA1CGoyrkixzPsyCkZk2IuevMRUwhK36FuX4K-5lH9tjyW7twbfURhETc8bEWtHG9/exec";
 
 
-/*
-==========================================
-GOOGLE APPS SCRIPT WEB APP
-==========================================
-*/
-
-const API_URL =
-"https://script.google.com/macros/s/AKfycbzYA1CGoyrkixzPsyCkZk2IuevMRUwhK36FuX4K-5lH9tjyW7twbfURhETc8bEWtHG9/exec";
+    let alreadyScanning = false;
 
 
-let alreadyScanning = false;
+    /**
+     * =====================================================
+     * QR SCAN SUCCESS
+     * =====================================================
+     */
+    function onScanSuccess(decodedText) {
 
-
-/*
-==========================================
-SHOW RESULT
-==========================================
-*/
-
-function showResult(html) {
-
-  document.getElementById("result").innerHTML = html;
-
-}
-
-
-/*
-==========================================
-SEND QR TO GOOGLE APPS SCRIPT
-==========================================
-*/
-
-function sendAttendance(qrId) {
-
-
-  showResult(
-    '<div class="loading">' +
-    '⏳ Checking attendance...' +
-    '</div>'
-  );
-
-
-  /*
-  Create unique JSONP callback
-  */
-
-  const callbackName =
-    "attendanceCallback_" +
-    Date.now();
-
-
-  /*
-  Create callback function
-  */
-
-  window[callbackName] =
-    function(response) {
-
-
-      /*
-      SUCCESS
-      */
-
-      if (response.success) {
-
-
-        showResult(
-
-          '<div class="success">' +
-
-          '🎉 ATTENDANCE CONFIRMED!' +
-
-          '<br><br>' +
-
-          '<strong>' +
-          escapeHtml(response.name) +
-          '</strong>' +
-
-          '<br>' +
-
-          escapeHtml(response.qrId) +
-
-          '<br><br>' +
-
-          'Checked in at ' +
-          escapeHtml(response.time) +
-
-          '</div>'
-
-        );
-
-
+      if (alreadyScanning) {
+        return;
       }
 
+      alreadyScanning = true;
 
-      /*
-      ALREADY PRESENT
-      */
+      const qrId = decodedText.trim();
 
-      else if (
-        response.alreadyPresent
-      ) {
+      document.getElementById("result").innerHTML =
+        '<div class="checking">' +
+        '⏳ Checking attendance...<br><br>' +
+        '<small>' +
+        qrId +
+        '</small>' +
+        '</div>';
 
-
-        showResult(
-
-          '<div class="error">' +
-
-          '⚠️ ALREADY CHECKED IN' +
-
-          '<br><br>' +
-
-          escapeHtml(response.name) +
-
-          '<br>' +
-
-          escapeHtml(response.message) +
-
-          '</div>'
-
-        );
-
-      }
+      sendAttendance(qrId);
+    }
 
 
-      /*
-      OTHER ERROR
-      */
+    /**
+     * =====================================================
+     * SEND ATTENDANCE TO GOOGLE APPS SCRIPT
+     *
+     * JSONP is used because this page is hosted on
+     * GitHub Pages.
+     * =====================================================
+     */
+    function sendAttendance(qrId) {
 
-      else {
+      const callbackName =
+        "attendanceCallback_" +
+        Date.now();
+
+      window[callbackName] = function(response) {
+
+        try {
+
+          if (response.success) {
+
+            document.getElementById("result").innerHTML =
+
+              '<div class="success">' +
+
+              '🎉 ATTENDANCE CONFIRMED!' +
+
+              '<div class="name">' +
+              escapeHtml(response.name) +
+              '</div>' +
+
+              '<div class="qrid">' +
+              escapeHtml(response.qrId) +
+              '</div>' +
+
+              '<br>' +
+
+              '🕐 Checked in at ' +
+              escapeHtml(response.time) +
+
+              '</div>';
+
+          } else {
+
+            document.getElementById("result").innerHTML =
+
+              '<div class="error">' +
+
+              '⚠️ ' +
+              escapeHtml(response.message) +
+
+              '</div>';
+          }
+
+        } catch (error) {
+
+          document.getElementById("result").innerHTML =
+
+            '<div class="error">' +
+            '❌ Unable to process attendance.' +
+            '</div>';
+        }
 
 
-        showResult(
+        // Clean up
+        delete window[callbackName];
 
-          '<div class="error">' +
+        const script =
+          document.getElementById(callbackName);
 
-          '❌ ' +
-
-          escapeHtml(
-            response.message
-          ) +
-
-          '</div>'
-
-        );
-
-      }
+        if (script) {
+          script.remove();
+        }
 
 
-      /*
-      Clean up
-      */
-
-      delete window[callbackName];
-
-      if (script.parentNode) {
-
-        script.parentNode.removeChild(
-          script
-        );
-
-      }
-
-
-      /*
-      Allow scanning again
-      */
-
-      setTimeout(
-        function() {
+        // Allow another scan
+        setTimeout(function() {
 
           alreadyScanning = false;
 
-          showResult(
-            "Ready to scan..."
-          );
+          document.getElementById("result").innerHTML =
+            "Ready for next attendee...";
 
+        }, 4000);
+
+      };
+
+
+      const script =
+        document.createElement("script");
+
+      script.id = callbackName;
+
+      script.src =
+        API_URL +
+        "?action=attendance" +
+        "&qrId=" +
+        encodeURIComponent(qrId) +
+        "&callback=" +
+        encodeURIComponent(callbackName);
+
+      script.onerror = function() {
+
+        document.getElementById("result").innerHTML =
+
+          '<div class="error">' +
+          '❌ Unable to connect to attendance system.' +
+          '<br><br>' +
+          '<small>Check the Google Apps Script deployment.</small>' +
+          '</div>';
+
+        delete window[callbackName];
+
+        script.remove();
+
+        alreadyScanning = false;
+      };
+
+
+      document.body.appendChild(script);
+    }
+
+
+    /**
+     * =====================================================
+     * SECURITY
+     * =====================================================
+     */
+    function escapeHtml(value) {
+
+      const div =
+        document.createElement("div");
+
+      div.textContent =
+        value == null ? "" : value;
+
+      return div.innerHTML;
+    }
+
+
+    /**
+     * =====================================================
+     * START QR SCANNER
+     * =====================================================
+     */
+
+    const scanner =
+      new Html5QrcodeScanner(
+        "reader",
+        {
+          fps: 10,
+
+          qrbox: {
+            width: 250,
+            height: 250
+          },
+
+          rememberLastUsedCamera: true
         },
-        3000
-      );
 
-    };
-
-
-  /*
-  Create script request
-  */
-
-  const script =
-    document.createElement("script");
-
-
-  script.src =
-    API_URL +
-    "?qr=" +
-    encodeURIComponent(qrId) +
-    "&callback=" +
-    callbackName;
-
-
-  /*
-  Error handling
-  */
-
-  script.onerror =
-    function() {
-
-      showResult(
-
-        '<div class="error">' +
-
-        '❌ Unable to connect to ' +
-        'attendance system.' +
-
-        '<br><br>' +
-
-        'Please check your internet connection.'
-
-        + '</div>'
-
+        false
       );
 
 
-      delete window[callbackName];
-
-      if (script.parentNode) {
-
-        script.parentNode.removeChild(
-          script
-        );
-
-      }
-
-
-      alreadyScanning = false;
-
-    };
-
-
-  document.body.appendChild(script);
-
-}
-
-
-/*
-==========================================
-ESCAPE HTML
-==========================================
-*/
-
-function escapeHtml(value) {
-
-  return String(value)
-
-    .replace(/&/g, "&amp;")
-
-    .replace(/</g, "&lt;")
-
-    .replace(/>/g, "&gt;")
-
-    .replace(/"/g, "&quot;")
-
-    .replace(/'/g, "&#039;");
-
-}
-
-
-/*
-==========================================
-QR SCANNER
-==========================================
-*/
-
-function onScanSuccess(decodedText) {
-
-
-  if (alreadyScanning) {
-
-    return;
-
-  }
-
-
-  alreadyScanning = true;
-
-
-  /*
-  Remove spaces
-  */
-
-  const qrId =
-    String(decodedText).trim();
-
-
-  /*
-  Validate XO QR
-  */
-
-  if (
-    !qrId.startsWith("XO-")
-  ) {
-
-
-    showResult(
-
-      '<div class="error">' +
-
-      '⚠️ Invalid XO+ QR Code' +
-
-      '</div>'
-
+    scanner.render(
+      onScanSuccess
     );
 
-
-    alreadyScanning = false;
-
-    return;
-
-  }
-
-
-  /*
-  Send to Apps Script
-  */
-
-  sendAttendance(qrId);
-
-}
-
-
-/*
-==========================================
-START CAMERA
-==========================================
-*/
-
-const scanner =
-  new Html5QrcodeScanner(
-
-    "reader",
-
-    {
-
-      fps: 10,
-
-      qrbox: {
-
-        width: 250,
-
-        height: 250
-
-      },
-
-      rememberLastUsedCamera: true
-
-    },
-
-    false
-
-  );
-
-
-scanner.render(
-  onScanSuccess
-);
-
-
-</script>
-
+  </script>
 
 </body>
 
