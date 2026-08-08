@@ -17,123 +17,360 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --purple: #5b3b8f;
+      --purple-dark: #432b6b;
+      --blue: #2563eb;
+      --red: #dc2626;
+      --green: #16803c;
+      --text: #171717;
+      --muted: #6b7280;
+      --card: rgba(255,255,255,0.94);
+      --shadow: 0 18px 45px rgba(30, 20, 60, 0.12);
+    }
+
     body {
       margin: 0;
-      padding: 20px;
+      min-height: 100vh;
+      padding: 24px 16px 40px;
       font-family: Arial, sans-serif;
       text-align: center;
-      background: #f5f5f5;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 0%, rgba(91,59,143,0.14), transparent 30%),
+        radial-gradient(circle at 100% 15%, rgba(37,99,235,0.10), transparent 28%),
+        linear-gradient(180deg, #f8f7fb 0%, #eef2f7 100%);
+    }
+
+    .app {
+      width: 100%;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin: 4px 0 6px;
     }
 
     h1 {
-      margin: 10px 0 5px;
+      margin: 0;
+      font-size: clamp(28px, 7vw, 38px);
+      letter-spacing: -0.7px;
+      font-weight: 800;
+    }
+
+    .brand-icon {
       font-size: 30px;
     }
 
     .subtitle {
-      color: #555;
-      margin-bottom: 20px;
+      color: var(--muted);
+      margin: 0 0 22px;
+      font-size: 16px;
     }
 
     #cameraContainer {
       width: 100%;
-      max-width: 500px;
-      margin: auto;
-      background: #000;
-      border-radius: 15px;
+      max-width: 520px;
+      margin: 0 auto;
+      background: #050505;
+      border-radius: 24px;
       overflow: hidden;
       position: relative;
+      box-shadow: var(--shadow);
+      border: 4px solid rgba(255,255,255,0.85);
     }
 
     #video {
       width: 100%;
+      min-height: 300px;
       display: block;
+      object-fit: cover;
     }
 
     #scanBox {
       position: absolute;
-      width: 250px;
-      height: 250px;
-      border: 3px solid white;
-      border-radius: 15px;
+      width: min(65vw, 270px);
+      height: min(65vw, 270px);
+      border: 3px solid rgba(255,255,255,0.95);
+      border-radius: 22px;
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
       pointer-events: none;
+      box-shadow:
+        0 0 0 9999px rgba(0,0,0,0.18),
+        0 0 24px rgba(255,255,255,0.20);
     }
 
-    #result {
-      max-width: 500px;
-      margin: 20px auto;
-      padding: 25px;
-      background: white;
-      border-radius: 15px;
-      font-size: 19px;
-      box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+    #scanBox::after {
+      content: "";
+      position: absolute;
+      left: 12%;
+      right: 12%;
+      top: 50%;
+      height: 2px;
+      background: rgba(255,255,255,0.75);
+      box-shadow: 0 0 10px rgba(255,255,255,0.8);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin: 20px auto 12px;
+      max-width: 520px;
     }
 
     button {
+      width: 100%;
       border: none;
-      border-radius: 10px;
-      padding: 14px 22px;
+      border-radius: 15px;
+      padding: 15px 18px;
       font-size: 17px;
+      font-weight: 700;
       cursor: pointer;
-      margin: 8px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      box-shadow: 0 7px 18px rgba(0,0,0,0.10);
+    }
+
+    button:active {
+      transform: scale(0.98);
     }
 
     #startButton {
-      background: #111;
+      background: linear-gradient(135deg, #111827, #2d2d35);
       color: white;
     }
 
     #stopButton {
-      background: #d93025;
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
       color: white;
     }
 
     #uploadButton {
-      background: #1a73e8;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
       color: white;
     }
 
-    #uploadButton:disabled {
+    #uploadButton:disabled,
+    button:disabled {
       opacity: 0.6;
       cursor: not-allowed;
     }
 
+    #status {
+      margin: 8px 0 14px;
+      font-size: 15px;
+      color: var(--muted);
+      min-height: 20px;
+    }
+
+    #result {
+      max-width: 520px;
+      min-height: 92px;
+      margin: 0 auto;
+      padding: 24px 20px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.9);
+      border-radius: 22px;
+      font-size: 18px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(12px);
+    }
+
+    .result-idle {
+      color: #4b5563;
+      font-weight: 600;
+    }
+
     .success {
-      color: #16803c;
-      font-weight: bold;
+      color: var(--green);
+      font-weight: 800;
     }
 
     .error {
-      color: #d93025;
-      font-weight: bold;
+      color: var(--red);
+      font-weight: 800;
     }
 
     .checking {
-      color: #555;
-      font-weight: bold;
+      color: #4b5563;
+      font-weight: 700;
     }
 
     .name {
-      font-size: 27px;
+      font-size: clamp(24px, 6vw, 31px);
+      line-height: 1.12;
       margin: 12px 0;
+      color: var(--text);
     }
 
     .qrid {
-      color: #666;
-      font-size: 17px;
+      color: #6b7280;
+      font-size: 16px;
+      font-weight: 600;
     }
 
-    #status {
-      margin-top: 10px;
-      font-size: 15px;
-      color: #666;
+    small {
+      line-height: 1.5;
     }
 
     canvas {
       display: none;
+    }
+
+    /* Attendance confirmation modal */
+    #attendanceModal {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(17, 12, 28, 0.72);
+      backdrop-filter: blur(8px);
+    }
+
+    #attendanceModal.show {
+      display: flex;
+      animation: modalFadeIn 0.22s ease-out;
+    }
+
+    .attendance-card {
+      width: min(100%, 440px);
+      position: relative;
+      overflow: hidden;
+      padding: 30px 24px 24px;
+      border-radius: 30px;
+      background: #fff;
+      box-shadow: 0 28px 80px rgba(0,0,0,0.28);
+      text-align: center;
+      animation: cardPop 0.25s ease-out;
+    }
+
+    .success-icon {
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 15px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #dcfce7;
+      color: #15803d;
+      font-size: 42px;
+      font-weight: 900;
+    }
+
+    .attendance-title {
+      margin: 0;
+      color: #15803d;
+      font-size: 27px;
+      font-weight: 900;
+    }
+
+    .attendance-name {
+      margin: 12px 0 5px;
+      font-size: clamp(23px, 6vw, 31px);
+      line-height: 1.15;
+      font-weight: 800;
+      color: #111827;
+    }
+
+    .attendance-qr {
+      color: #6b7280;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .attendance-time {
+      margin: 16px 0;
+      padding: 12px;
+      border-radius: 14px;
+      background: #f3f4f6;
+      color: #374151;
+      font-weight: 700;
+    }
+
+    .confirmation-message {
+      color: #6b7280;
+      font-size: 14px;
+      line-height: 1.45;
+      margin: 12px 0 18px;
+    }
+
+    .countdown-wrap {
+      margin: 0 0 16px;
+    }
+
+    .countdown-label {
+      color: #6b7280;
+      font-size: 13px;
+      margin-bottom: 7px;
+    }
+
+    .countdown {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--purple);
+    }
+
+    .progress-track {
+      height: 7px;
+      margin-top: 8px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: #e5e7eb;
+    }
+
+    #confirmationProgress {
+      width: 100%;
+      height: 100%;
+      transform-origin: left center;
+      background: linear-gradient(90deg, #5b3b8f, #2563eb);
+      border-radius: inherit;
+    }
+
+    #closeAttendanceButton {
+      margin: 0;
+      background: linear-gradient(135deg, #5b3b8f, #432b6b);
+      color: white;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes cardPop {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @media (min-width: 620px) {
+      .controls {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+
+      button {
+        margin: 0;
+      }
     }
 
   </style>
@@ -144,7 +381,7 @@
 
 <body>
 
-  <h1>📱 XO+ Attendance</h1>
+  <h1>XO+ Attendance</h1>
 
   <div class="subtitle">
     Scan the attendee's QR Code
@@ -196,9 +433,58 @@
 
 
   <div id="result">
-    Ready to scan...
+    <div class="result-idle">Ready to scan...</div>
   </div>
 
+
+
+  <!-- Attendance confirmation popup -->
+  <div id="attendanceModal" role="dialog" aria-modal="true" aria-labelledby="attendanceTitle">
+
+    <div class="attendance-card">
+
+      <div class="success-icon">✓</div>
+
+      <h2 id="attendanceTitle" class="attendance-title">
+        Attendance Confirmed!
+      </h2>
+
+      <div id="attendanceName" class="attendance-name">
+        Attendee
+      </div>
+
+      <div id="attendanceQr" class="attendance-qr">
+        XO-0000
+      </div>
+
+      <div id="attendanceTime" class="attendance-time">
+        🕐 Checked in at --
+      </div>
+
+      <div id="attendanceMessage" class="confirmation-message">
+        Attendance recorded successfully.
+      </div>
+
+      <div class="countdown-wrap">
+        <div class="countdown-label">
+          This confirmation will close automatically
+        </div>
+
+        <div id="confirmationCountdown" class="countdown">
+          60 seconds
+        </div>
+
+        <div class="progress-track">
+          <div id="confirmationProgress"></div>
+        </div>
+      </div>
+
+      <button id="closeAttendanceButton" type="button">
+        ✓ Done — Continue Scanning
+      </button>
+
+    </div>
+  </div>
 
   <canvas id="canvas"></canvas>
 
@@ -246,6 +532,30 @@ const uploadButton =
 const qrFileInput =
   document.getElementById("qrFileInput");
 
+const attendanceModal =
+  document.getElementById("attendanceModal");
+
+const attendanceName =
+  document.getElementById("attendanceName");
+
+const attendanceQr =
+  document.getElementById("attendanceQr");
+
+const attendanceTime =
+  document.getElementById("attendanceTime");
+
+const attendanceMessage =
+  document.getElementById("attendanceMessage");
+
+const confirmationCountdown =
+  document.getElementById("confirmationCountdown");
+
+const confirmationProgress =
+  document.getElementById("confirmationProgress");
+
+const closeAttendanceButton =
+  document.getElementById("closeAttendanceButton");
+
 
 /*
 ====================================================
@@ -260,6 +570,9 @@ let scanning = false;
 let processingQR = false;
 
 let detector = null;
+
+let confirmationTimer = null;
+let confirmationEndTime = 0;
 
 
 /*
@@ -578,6 +891,115 @@ SEND ATTENDANCE TO APPS SCRIPT
 ====================================================
 */
 
+function showAttendanceConfirmation(response) {
+
+  clearInterval(confirmationTimer);
+
+  attendanceName.textContent =
+    response.name || "Attendee";
+
+  attendanceQr.textContent =
+    response.qrId || "";
+
+  attendanceTime.textContent =
+    "🕐 Checked in at " +
+    (response.time || "--");
+
+  attendanceMessage.textContent =
+    response.message ||
+    "Attendance recorded successfully.";
+
+  attendanceModal.classList.add("show");
+
+  confirmationEndTime =
+    Date.now() + 60000;
+
+  confirmationProgress.style.transform =
+    "scaleX(1)";
+
+  updateConfirmationCountdown();
+
+  confirmationTimer =
+    setInterval(
+      updateConfirmationCountdown,
+      250
+    );
+}
+
+
+function updateConfirmationCountdown() {
+
+  const remainingMs =
+    Math.max(
+      0,
+      confirmationEndTime - Date.now()
+    );
+
+  const remainingSeconds =
+    Math.ceil(remainingMs / 1000);
+
+  confirmationCountdown.textContent =
+    remainingSeconds +
+    (remainingSeconds === 1
+      ? " second"
+      : " seconds");
+
+  confirmationProgress.style.transform =
+    "scaleX(" +
+    (remainingMs / 60000) +
+    ")";
+
+  if (remainingMs <= 0) {
+    closeAttendanceConfirmation();
+  }
+}
+
+
+function closeAttendanceConfirmation() {
+
+  clearInterval(confirmationTimer);
+  confirmationTimer = null;
+
+  attendanceModal.classList.remove("show");
+
+  processingQR = false;
+
+  result.innerHTML =
+    '<div class="result-idle">' +
+    'Ready for next attendee...' +
+    '</div>';
+
+  scanning = true;
+}
+
+
+closeAttendanceButton.addEventListener(
+  "click",
+  closeAttendanceConfirmation
+);
+
+attendanceModal.addEventListener(
+  "click",
+  function(event) {
+    if (event.target === attendanceModal) {
+      closeAttendanceConfirmation();
+    }
+  }
+);
+
+document.addEventListener(
+  "keydown",
+  function(event) {
+    if (
+      event.key === "Escape" &&
+      attendanceModal.classList.contains("show")
+    ) {
+      closeAttendanceConfirmation();
+    }
+  }
+);
+
+
 function sendAttendance(qrId) {
 
   const callbackName =
@@ -605,11 +1027,8 @@ function sendAttendance(qrId) {
   }
 
   function finishAndResume() {
-    setTimeout(function() {
-      processingQR = false;
-      result.innerHTML = "Ready for next attendee...";
-      scanning = true;
-    }, 3500);
+    processingQR = false;
+    scanning = false;
   }
 
   const timeout = setTimeout(function() {
@@ -679,33 +1098,7 @@ function sendAttendance(qrId) {
     // SUCCESS
     if (response.success === true) {
 
-      result.innerHTML =
-        '<div class="success">' +
-        '🎉 ATTENDANCE CONFIRMED!' +
-
-        '<div class="name">' +
-        escapeHtml(response.name) +
-        '</div>' +
-
-        '<div class="qrid">' +
-        escapeHtml(response.qrId) +
-        '</div>' +
-
-        '<br>' +
-
-        '🕐 Checked in at ' +
-        escapeHtml(response.time || "") +
-
-        '<br><br>' +
-
-        '<small>' +
-        escapeHtml(
-          response.message ||
-          "Attendance recorded successfully."
-        ) +
-        '</small>' +
-
-        '</div>';
+      showAttendanceConfirmation(response);
 
       finishAndResume();
       return;
