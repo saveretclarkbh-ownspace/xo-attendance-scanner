@@ -297,10 +297,13 @@
 
     .attendance-name {
       margin: 12px 0 5px;
-      font-size: clamp(23px, 6vw, 31px);
-      line-height: 1.15;
+      font-size: clamp(21px, 5.5vw, 31px);
+      line-height: 1.18;
       font-weight: 800;
       color: #111827;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: normal;
     }
 
     .attendance-qr {
@@ -912,8 +915,15 @@ function showAttendanceConfirmation(response) {
 
   clearInterval(confirmationTimer);
 
+  const fullName =
+    String(
+      response.fullName ||
+      response.name ||
+      "Attendee"
+    ).trim();
+
   attendanceName.textContent =
-    response.name || "Attendee";
+    fullName;
 
   attendanceQr.textContent =
     response.qrId || "";
