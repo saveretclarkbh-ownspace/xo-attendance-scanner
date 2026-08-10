@@ -1,869 +1,425 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <title>XO+ Attendance</title>
-
-  <script src="https://unpkg.com/html5-qrcode"></script>
-
-  <style>
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Arial,
-        sans-serif;
-
-      background:
-        linear-gradient(
-          135deg,
-          #f4fbfa,
-          #ffffff
-        );
-
-      color: #222;
-
-      display: flex;
-      justify-content: center;
-      align-items: center;
-
-      padding: 20px;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 520px;
-
-      background: white;
-
-      border-radius: 24px;
-
-      padding: 25px;
-
-      box-shadow:
-        0 12px 40px
-        rgba(0, 0, 0, 0.10);
-
-      text-align: center;
-    }
-
-    .logo {
-      width: 70px;
-      height: 70px;
-
-      border-radius: 18px;
-
-      margin-bottom: 12px;
-
-      object-fit: contain;
-    }
-
-    h1 {
-      margin: 0;
-
-      font-size: 28px;
-
-      font-weight: 800;
-    }
-
-    .subtitle {
-      margin-top: 8px;
-
-      color: #777;
-
-      font-size: 15px;
-    }
-
-    #reader {
-      width: 100%;
-
-      margin-top: 22px;
-
-      overflow: hidden;
-
-      border-radius: 18px;
-    }
-
-    button {
-      border: none;
-
-      width: 100%;
-
-      padding: 14px 18px;
-
-      margin-top: 14px;
-
-      border-radius: 14px;
-
-      font-size: 16px;
-
-      font-weight: 700;
-
-      cursor: pointer;
-    }
-
-    #startButton {
-      background: #a5d4d0;
-
-      color: #183d3a;
-    }
-
-    #stopButton {
-      background: #eeeeee;
-
-      color: #333;
-    }
-
-    .status {
-      margin-top: 18px;
-
-      padding: 15px;
-
-      border-radius: 14px;
-
-      background: #f5f5f5;
-
-      font-size: 14px;
-
-      line-height: 1.5;
-    }
-
-    .success {
-      background: #dff3e2;
-
-      color: #225b2d;
-    }
-
-    .error {
-      background: #ffe1e1;
-
-      color: #8b2222;
-    }
-
-    .warning {
-      background: #fff3cd;
-
-      color: #725400;
-    }
-
-    .name {
-      font-size: 22px;
-
-      font-weight: 800;
-
-      margin-bottom: 6px;
-    }
-
-    .small {
-      font-size: 13px;
-
-      color: #777;
-
-      margin-top: 15px;
-    }
-
-  </style>
-
-</head>
-
-<body>
-
-  <div class="container">
-
-    <img
-      class="logo"
-      src="https://raw.githubusercontent.com/saveretclarkbh-ownspace/xo-attendance-scanner/main/logo.png"
-      alt="XO+"
-      onerror="this.style.display='none'"
-    >
-
-    <h1>XO+ Attendance</h1>
-
-    <div class="subtitle">
-      Scan the attendee's QR Code
-    </div>
-
-
-    <div id="reader"></div>
-
-
-    <button
-      id="startButton"
-      onclick="startScanner()"
-    >
-      📷 Request Camera Permissions
-    </button>
-
-
-    <button
-      id="stopButton"
-      onclick="stopScanner()"
-      style="display:none;"
-    >
-      Stop Camera
-    </button>
-
-
-    <div
-      id="status"
-      class="status"
-    >
-      Ready to scan...
-    </div>
-
-
-    <div class="small">
-      You may also use your device's camera to scan
-      the QR code.
-    </div>
-
-  </div>
-
-
 <script>
 
-  /* =======================================================
-     CONFIG
-     ======================================================= */
+const WEB_APP_URL =
+  "https://script.google.com/macros/s/AKfycbzYA1CGoyrkixzPsyCkZk2IuevMRUwhK36FuX4K-5lH9tjyW7twbfURhETc8bEWtHG9/exec";
 
-  const WEB_APP_URL =
-    "https://script.google.com/macros/s/AKfycbzYA1CGoyrkixzPsyCkZk2IuevMRUwhK36FuX4K-5lH9tjyW7twbfURhETc8bEWtHG9/exec";
+let scanner = null;
+let scanning = false;
+let processing = false;
 
+const statusBox =
+  document.getElementById("status");
 
-  let scanner = null;
+const startButton =
+  document.getElementById("startButton");
 
-  let scanning = false;
-
-  let processing = false;
-
-
-  /* =======================================================
-     ELEMENTS
-     ======================================================= */
-
-  const statusBox =
-    document.getElementById("status");
-
-  const startButton =
-    document.getElementById("startButton");
-
-  const stopButton =
-    document.getElementById("stopButton");
+const stopButton =
+  document.getElementById("stopButton");
 
 
-  /* =======================================================
-     STATUS
-     ======================================================= */
+function setStatus(message, type = "") {
 
-  function setStatus(
-    message,
-    type = ""
-  ) {
+  statusBox.className = "status " + type;
+  statusBox.innerHTML = message;
 
-    statusBox.className =
-      "status " + type;
-
-    statusBox.innerHTML =
-      message;
-  }
+}
 
 
-  /* =======================================================
-     START SCANNER
-     ======================================================= */
+async function startScanner() {
 
-  async function startScanner() {
+  if (scanning) return;
 
-    if (scanning) {
-      return;
-    }
-
-    try {
-
-      setStatus(
-        "Requesting camera permission..."
-      );
-
-
-      scanner =
-        new Html5Qrcode(
-          "reader"
-        );
-
-
-      await scanner.start(
-
-        {
-          facingMode: "environment"
-        },
-
-        {
-          fps: 10,
-
-          qrbox: {
-            width: 250,
-            height: 250
-          },
-
-          aspectRatio: 1.0
-
-        },
-
-        onScanSuccess,
-
-        onScanFailure
-
-      );
-
-
-      scanning = true;
-
-      startButton.style.display =
-        "none";
-
-      stopButton.style.display =
-        "block";
-
-
-      setStatus(
-        "📷 Camera ready.<br>Scan the attendee's QR Code."
-      );
-
-
-    } catch (error) {
-
-      console.error(
-        error
-      );
-
-
-      setStatus(
-        "❌ Unable to access the camera.<br><br>" +
-        "Please allow camera permission in Chrome " +
-        "and make sure this page is opened using HTTPS.",
-        "error"
-      );
-
-    }
-
-  }
-
-
-  /* =======================================================
-     STOP SCANNER
-     ======================================================= */
-
-  async function stopScanner() {
-
-    if (
-      !scanner ||
-      !scanning
-    ) {
-      return;
-    }
-
-
-    try {
-
-      await scanner.stop();
-
-      scanner.clear();
-
-    } catch (error) {
-
-      console.error(
-        error
-      );
-
-    }
-
-
-    scanning = false;
-
-    startButton.style.display =
-      "block";
-
-    stopButton.style.display =
-      "none";
-
+  try {
 
     setStatus(
-      "Ready to scan..."
+      "Requesting camera permission..."
+    );
+
+    scanner =
+      new Html5Qrcode("reader");
+
+    await scanner.start(
+
+      {
+        facingMode: "environment"
+      },
+
+      {
+        fps: 10,
+
+        qrbox: {
+          width: 250,
+          height: 250
+        },
+
+        aspectRatio: 1.0
+      },
+
+      onScanSuccess,
+      onScanFailure
+
+    );
+
+    scanning = true;
+
+    startButton.style.display = "none";
+    stopButton.style.display = "block";
+
+    setStatus(
+      "📷 Camera ready.<br>Scan the attendee's QR Code."
+    );
+
+  } catch (error) {
+
+    console.error(error);
+
+    setStatus(
+      "❌ Unable to access the camera.<br><br>" +
+      "Please allow camera permission in Chrome " +
+      "and make sure this page is opened using HTTPS.",
+      "error"
     );
 
   }
 
+}
 
-  /* =======================================================
-     SCAN SUCCESS
-     ======================================================= */
 
-  async function onScanSuccess(
+async function stopScanner() {
+
+  if (!scanner || !scanning) {
+    return;
+  }
+
+  try {
+
+    await scanner.stop();
+    scanner.clear();
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+
+  scanning = false;
+
+  startButton.style.display = "block";
+  stopButton.style.display = "none";
+
+}
+
+
+async function onScanSuccess(decodedText) {
+
+  if (processing) {
+    return;
+  }
+
+  processing = true;
+
+  console.log(
+    "QR detected:",
     decodedText
-  ) {
+  );
 
-    if (processing) {
-      return;
-    }
+  await stopScanner();
 
+  const qrId =
+    extractQrId(decodedText);
 
-    processing = true;
+  if (!qrId) {
 
-
-    console.log(
-      "QR detected:",
-      decodedText
-    );
-
-
-    await stopScanner();
-
-
-    const qrId =
-      extractQrId(
-        decodedText
-      );
-
-
-    if (!qrId) {
-
-      processing = false;
-
-      setStatus(
-        "❌ Invalid XO+ QR Code.<br><br>" +
-        "Please scan an official XO+ attendee QR code.",
-        "error"
-      );
-
-      return;
-
-    }
-
+    processing = false;
 
     setStatus(
-      "⏳ Checking attendance...<br>" +
-      "QR ID: " +
-      escapeHtml(qrId)
+      "❌ Invalid XO+ QR Code.<br><br>" +
+      "Please scan an official XO+ attendee QR code.",
+      "error"
     );
 
-
-    callAttendanceAPI(
-      qrId
-    );
-
+    return;
   }
 
+  setStatus(
+    "⏳ Checking attendance...<br>" +
+    "QR ID: " +
+    escapeHtml(qrId)
+  );
 
-  /* =======================================================
-     QR EXTRACTION
-     ======================================================= */
+  sendAttendance(qrId);
 
-  function extractQrId(
-    text
-  ) {
-
-    if (!text) {
-      return null;
-    }
+}
 
 
-    text =
-      String(text)
-        .trim();
+function extractQrId(text) {
 
-
-    /*
-     * Direct QR:
-     *
-     * XO-0008
-     */
-
-    const directMatch =
-      text.match(
-        /^XO-\d+$/i
-      );
-
-
-    if (directMatch) {
-
-      return directMatch[0]
-        .toUpperCase();
-
-    }
-
-
-    /*
-     * URL containing:
-     *
-     * qrId=XO-0008
-     */
-
-    try {
-
-      const url =
-        new URL(text);
-
-      const qrId =
-        url.searchParams.get(
-          "qrId"
-        );
-
-
-      if (
-        qrId &&
-        /^XO-\d+$/i.test(
-          qrId
-        )
-      ) {
-
-        return qrId
-          .toUpperCase();
-
-      }
-
-    } catch (error) {
-
-      // Not a URL
-
-    }
-
-
-    /*
-     * Search text for XO-0008
-     */
-
-    const match =
-      text.match(
-        /XO-\d+/i
-      );
-
-
-    if (match) {
-
-      return match[0]
-        .toUpperCase();
-
-    }
-
-
+  if (!text) {
     return null;
+  }
+
+  text =
+    String(text).trim();
+
+  /* Direct QR: XO-0008 */
+
+  const direct =
+    text.match(/^XO-\d+$/i);
+
+  if (direct) {
+
+    return direct[0]
+      .toUpperCase();
 
   }
 
 
-  /* =======================================================
-     ATTENDANCE API
-     ======================================================= */
+  /* QR contains URL */
 
-  function callAttendanceAPI(
-    qrId
-  ) {
-
-    const callbackName =
-      "xoAttendanceCallback_" +
-      Date.now();
-
-
-    const script =
-      document.createElement(
-        "script"
-      );
-
-
-    const timeout =
-      setTimeout(
-        function() {
-
-          cleanup();
-
-          processing = false;
-
-          setStatus(
-            "❌ Unable to connect to the attendance system.<br><br>" +
-            "Google Apps Script did not respond.",
-            "error"
-          );
-
-        },
-        15000
-      );
-
-
-    window[
-      callbackName
-    ] =
-      function(result) {
-
-        clearTimeout(
-          timeout
-        );
-
-        cleanup();
-
-        processing = false;
-
-        handleAttendanceResult(
-          result
-        );
-
-      };
-
-
-    function cleanup() {
-
-      try {
-
-        delete window[
-          callbackName
-        ];
-
-      } catch (error) {
-
-        window[
-          callbackName
-        ] = undefined;
-
-      }
-
-
-      if (
-        script.parentNode
-      ) {
-
-        script.parentNode
-          .removeChild(
-            script
-          );
-
-      }
-
-    }
-
+  try {
 
     const url =
-      WEB_APP_URL +
-      "?action=attendance" +
-      "&qrId=" +
-      encodeURIComponent(
-        qrId
-      ) +
-      "&callback=" +
-      encodeURIComponent(
-        callbackName
-      ) +
-      "&_=" +
-      Date.now();
+      new URL(text);
+
+    const qrId =
+      url.searchParams.get("qrId");
+
+    if (
+      qrId &&
+      /^XO-\d+$/i.test(qrId)
+    ) {
+
+      return qrId
+        .toUpperCase();
+
+    }
+
+  } catch (error) {
+
+    // Not a URL
+  }
 
 
-    script.src =
-      url;
+  /* Search anywhere in QR text */
+
+  const match =
+    text.match(/XO-\d+/i);
+
+  if (match) {
+
+    return match[0]
+      .toUpperCase();
+
+  }
+
+  return null;
+
+}
 
 
-    script.onerror =
+/* ==========================================================
+   ATTENDANCE REQUEST
+   ========================================================== */
+
+function sendAttendance(qrId) {
+
+  const callbackName =
+    "xoCallback_" +
+    Date.now() +
+    "_" +
+    Math.floor(
+      Math.random() * 100000
+    );
+
+
+  let finished = false;
+
+
+  const script =
+    document.createElement("script");
+
+
+  function cleanup() {
+
+    if (finished) {
+      return;
+    }
+
+    finished = true;
+
+    clearTimeout(timeout);
+
+    try {
+      delete window[callbackName];
+    } catch (error) {
+      window[callbackName] = undefined;
+    }
+
+    if (script.parentNode) {
+      script.parentNode.removeChild(script);
+    }
+
+  }
+
+
+  const timeout =
+    setTimeout(
       function() {
-
-        clearTimeout(
-          timeout
-        );
 
         cleanup();
 
         processing = false;
+
+        console.error(
+          "Apps Script timeout"
+        );
 
         setStatus(
           "❌ Unable to connect to the attendance system.<br><br>" +
-          "Please try scanning again.",
+          "Google Apps Script did not respond.<br><br>" +
+          "Please try again.",
           "error"
         );
 
-      };
-
-
-    document.body.appendChild(
-      script
-    );
-
-  }
-
-
-  /* =======================================================
-     HANDLE RESULT
-     ======================================================= */
-
-  function handleAttendanceResult(
-    result
-  ) {
-
-    console.log(
-      "Attendance response:",
-      result
+      },
+      20000
     );
 
 
-    if (!result) {
+  window[callbackName] =
+    function(result) {
+
+      cleanup();
+
+      processing = false;
+
+      console.log(
+        "Apps Script response:",
+        result
+      );
+
+      handleAttendanceResult(
+        result
+      );
+
+    };
+
+
+  script.onerror =
+    function(error) {
+
+      cleanup();
+
+      processing = false;
+
+      console.error(
+        "JSONP error:",
+        error
+      );
 
       setStatus(
-        "❌ Empty response from attendance system.",
+        "❌ Unable to connect to the attendance system.<br><br>" +
+        "Please try scanning again.",
         "error"
       );
 
-      return;
-
-    }
+    };
 
 
-    /* -----------------------------------------------------
-       SUCCESS
-       ----------------------------------------------------- */
-
-    if (
-      result.success === true
-    ) {
-
-      setStatus(
-
-        "<div class='name'>" +
-        escapeHtml(
-          result.name ||
-          "Attendee"
-        ) +
-        "</div>" +
-
-        "✅ <strong>Attendance Confirmed!</strong><br><br>" +
-
-        "📅 " +
-        escapeHtml(
-          result.date ||
-          ""
-        ) +
-
-        "<br>" +
-
-        "🕒 " +
-        escapeHtml(
-          result.time ||
-          ""
-        ) +
-
-        "<br><br>" +
-
-        "QR ID: " +
-        escapeHtml(
-          result.qrId ||
-          ""
-        ),
-
-        "success"
-
-      );
+  const requestUrl =
+    WEB_APP_URL +
+    "?action=attendance" +
+    "&qrId=" +
+    encodeURIComponent(qrId) +
+    "&callback=" +
+    encodeURIComponent(callbackName) +
+    "&timestamp=" +
+    Date.now();
 
 
-      setTimeout(
-        function() {
-
-          setStatus(
-            "Ready to scan the next attendee..."
-          );
-
-          startScanner();
-
-        },
-        4000
-      );
+  console.log(
+    "Sending attendance request:",
+    requestUrl
+  );
 
 
-      return;
-
-    }
-
-
-    /* -----------------------------------------------------
-       ALREADY PRESENT
-       ----------------------------------------------------- */
-
-    if (
-      result.alreadyPresent === true
-    ) {
-
-      setStatus(
-
-        "<div class='name'>" +
-        escapeHtml(
-          result.name ||
-          "Attendee"
-        ) +
-        "</div>" +
-
-        "⚠️ <strong>Already Checked In</strong><br><br>" +
-
-        escapeHtml(
-          result.message ||
-          "This attendee is already present."
-        ) +
-
-        "<br><br>" +
-
-        (
-          result.time
-            ? "🕒 " +
-              escapeHtml(
-                result.time
-              )
-            : ""
-        ),
-
-        "warning"
-
-      );
+  script.src =
+    requestUrl;
 
 
-      setTimeout(
-        function() {
-
-          setStatus(
-            "Ready to scan the next attendee..."
-          );
-
-          startScanner();
-
-        },
-        4000
-      );
+  script.async = true;
 
 
-      return;
+  document.head.appendChild(
+    script
+  );
 
-    }
+}
 
 
-    /* -----------------------------------------------------
-       ERROR
-       ----------------------------------------------------- */
+/* ==========================================================
+   RESULT
+   ========================================================== */
+
+function handleAttendanceResult(result) {
+
+  if (!result) {
+
+    setStatus(
+      "❌ Empty response from attendance system.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  console.log(
+    "Attendance result:",
+    result
+  );
+
+
+  /* SUCCESS */
+
+  if (
+    result.success === true
+  ) {
 
     setStatus(
 
-      "❌ " +
+      "<div class='name'>" +
       escapeHtml(
-        result.message ||
-        "Attendance could not be recorded."
+        result.name ||
+        "Attendee"
+      ) +
+      "</div>" +
+
+      "✅ <strong>Attendance Confirmed!</strong><br><br>" +
+
+      "📅 " +
+      escapeHtml(
+        result.date ||
+        ""
+      ) +
+
+      "<br>" +
+
+      "🕒 " +
+      escapeHtml(
+        result.time ||
+        ""
+      ) +
+
+      "<br><br>" +
+
+      "QR ID: " +
+      escapeHtml(
+        result.qrId ||
+        ""
       ),
 
-      "error"
+      "success"
 
     );
 
@@ -872,7 +428,7 @@
       function() {
 
         setStatus(
-          "Ready to scan..."
+          "Ready to scan the next attendee..."
         );
 
         startScanner();
@@ -881,59 +437,140 @@
       4000
     );
 
+    return;
+
   }
 
 
-  /* =======================================================
-     ESCAPE HTML
-     ======================================================= */
+  /* ALREADY PRESENT */
 
-  function escapeHtml(
-    value
+  if (
+    result.alreadyPresent === true
   ) {
 
-    return String(
-      value
-    )
-      .replace(
-        /&/g,
-        "&amp;"
-      )
-      .replace(
-        /</g,
-        "&lt;"
-      )
-      .replace(
-        />/g,
-        "&gt;"
-      )
-      .replace(
-        /"/g,
-        "&quot;"
-      )
-      .replace(
-        /'/g,
-        "&#039;"
+    setStatus(
+
+      "<div class='name'>" +
+      escapeHtml(
+        result.name ||
+        "Attendee"
+      ) +
+      "</div>" +
+
+      "⚠️ <strong>Already Checked In</strong><br><br>" +
+
+      escapeHtml(
+        result.message ||
+        "This attendee is already present."
+      ) +
+
+      (
+        result.time
+          ? "<br><br>🕒 " +
+            escapeHtml(
+              result.time
+            )
+          : ""
+      ),
+
+      "warning"
+
+    );
+
+
+    setTimeout(
+      function() {
+
+        setStatus(
+          "Ready to scan the next attendee..."
+        );
+
+        startScanner();
+
+      },
+      4000
+    );
+
+    return;
+
+  }
+
+
+  /* ERROR */
+
+  setStatus(
+
+    "❌ " +
+    escapeHtml(
+      result.message ||
+      "Attendance could not be recorded."
+    ),
+
+    "error"
+
+  );
+
+
+  setTimeout(
+    function() {
+
+      setStatus(
+        "Ready to scan..."
       );
 
-  }
+      startScanner();
+
+    },
+    4000
+  );
+
+}
 
 
-  /* =======================================================
-     SCAN FAILURE
-     ======================================================= */
+/* ==========================================================
+   HTML ESCAPE
+   ========================================================== */
 
-  function onScanFailure(
-    error
-  ) {
+function escapeHtml(value) {
 
-    // Ignore normal scanning failures.
-    // QR scanner continuously calls this while
-    // looking for a QR code.
+  return String(value)
 
-  }
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+
+    .replace(
+      /</g,
+      "&lt;"
+    )
+
+    .replace(
+      />/g,
+      "&gt;"
+    )
+
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
+}
+
+
+/* ==========================================================
+   SCAN FAILURE
+   ========================================================== */
+
+function onScanFailure(error) {
+
+  // Normal scanner failures are ignored.
+
+}
 
 </script>
-
-</body>
-</html>
