@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -262,7 +263,7 @@
 
 <div class="container">
 
-    <!-- Replace this with your existing XO+ logo filename if needed -->
+    <!-- XO+ LOGO -->
     <img
         src="XO+ Logo.png"
         alt="XO+"
@@ -271,45 +272,75 @@
     >
 
     <h1>XO+ Attendance</h1>
-    <p class="subtitle">Scan your QR code to record your attendance</p>
+
+    <p class="subtitle">
+        Scan your QR code to record your attendance
+    </p>
 
     <div class="scanner-box">
-        <video id="video" autoplay muted playsinline></video>
+
+        <video
+            id="video"
+            autoplay
+            muted
+            playsinline>
+        </video>
 
         <div class="scanner-overlay">
+
             <div class="scanner-frame"></div>
+
             <div class="scan-line"></div>
+
         </div>
+
     </div>
 
-    <div class="status" id="scannerStatus">
+    <div
+        class="status"
+        id="scannerStatus">
+
         Point your camera at your QR code
+
     </div>
 
     <div class="buttons">
+
         <button
             class="primary"
             id="startButton"
             onclick="startQRScanner()">
+
             Start Scanner
+
         </button>
 
-        <label class="secondary" style="flex:1; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer;">
+        <label
+            class="secondary"
+            style="flex:1; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer;">
+
             Upload QR
+
             <input
                 type="file"
                 id="qrFile"
                 accept="image/*"
                 onchange="handleQRUpload(event)">
+
         </label>
+
     </div>
 
 </div>
 
 
-<!-- SUCCESS POPUP -->
+<!-- ============================================================
+     SUCCESS POPUP
+     ============================================================ -->
 
-<div class="popup" id="successPopup">
+<div
+    class="popup"
+    id="successPopup">
 
     <div class="popup-card">
 
@@ -321,8 +352,12 @@
             Attendance Confirmed!
         </h2>
 
-        <div class="attendee-name" id="attendeeName">
+        <div
+            class="attendee-name"
+            id="attendeeName">
+
             Attendee
+
         </div>
 
         <p id="successMessage">
@@ -332,18 +367,33 @@
         <div class="details">
 
             <div>
+
                 <strong>QR ID:</strong>
-                <span id="resultQrId">-</span>
+
+                <span id="resultQrId">
+                    -
+                </span>
+
             </div>
 
             <div>
+
                 <strong>Date:</strong>
-                <span id="resultDate">-</span>
+
+                <span id="resultDate">
+                    -
+                </span>
+
             </div>
 
             <div>
+
                 <strong>Time:</strong>
-                <span id="resultTime">-</span>
+
+                <span id="resultTime">
+                    -
+                </span>
+
             </div>
 
         </div>
@@ -351,7 +401,9 @@
         <button
             class="popup-button"
             onclick="closeSuccessPopup()">
+
             Done
+
         </button>
 
     </div>
@@ -359,9 +411,13 @@
 </div>
 
 
-<!-- ERROR POPUP -->
+<!-- ============================================================
+     ERROR POPUP
+     ============================================================ -->
 
-<div class="popup" id="errorPopup">
+<div
+    class="popup"
+    id="errorPopup">
 
     <div class="popup-card">
 
@@ -380,7 +436,9 @@
         <button
             class="popup-button"
             onclick="closeErrorPopup(); startQRScanner();">
+
             Try Again
+
         </button>
 
     </div>
@@ -402,7 +460,8 @@ const API_URL =
    GLOBAL VARIABLES
    ============================================================ */
 
-let video = document.getElementById("video");
+let video =
+    document.getElementById("video");
 
 let stream = null;
 
@@ -421,7 +480,10 @@ let barcodeDetector = null;
 
 async function startQRScanner() {
 
-    const status = document.getElementById("scannerStatus");
+    const status =
+        document.getElementById(
+            "scannerStatus"
+        );
 
     try {
 
@@ -435,30 +497,34 @@ async function startQRScanner() {
             return;
         }
 
-        barcodeDetector = new BarcodeDetector({
-            formats: ["qr_code"]
-        });
+        barcodeDetector =
+            new BarcodeDetector({
+                formats: ["qr_code"]
+            });
 
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: {
-                    ideal: "environment"
-                }
-            },
-            audio: false
-        });
+        stream =
+            await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: {
+                        ideal: "environment"
+                    }
+                },
+                audio: false
+            });
 
-        video.srcObject = stream;
+        video.srcObject =
+            stream;
 
         await video.play();
 
         status.textContent =
             "Scanning for QR code...";
 
-        scannerInterval = setInterval(
-            detectQR,
-            500
-        );
+        scannerInterval =
+            setInterval(
+                detectQR,
+                500
+            );
 
     } catch (error) {
 
@@ -485,14 +551,19 @@ async function detectQR() {
         return;
     }
 
-    if (!video.videoWidth || !video.videoHeight) {
+    if (
+        !video.videoWidth ||
+        !video.videoHeight
+    ) {
         return;
     }
 
     try {
 
         const barcodes =
-            await barcodeDetector.detect(video);
+            await barcodeDetector.detect(
+                video
+            );
 
         if (!barcodes.length) {
             return;
@@ -505,10 +576,12 @@ async function detectQR() {
             return;
         }
 
-        const now = Date.now();
+        const now =
+            Date.now();
 
         /*
-         * Prevent the same QR from being scanned repeatedly.
+         * Prevent the same QR from
+         * being scanned repeatedly.
          */
 
         if (
@@ -518,8 +591,11 @@ async function detectQR() {
             return;
         }
 
-        lastScannedQR = value;
-        lastScanTime = now;
+        lastScannedQR =
+            value;
+
+        lastScanTime =
+            now;
 
         console.log(
             "QR detected:",
@@ -528,7 +604,9 @@ async function detectQR() {
 
         stopCamera();
 
-        processQRValue(value);
+        processQRValue(
+            value
+        );
 
     } catch (error) {
 
@@ -554,7 +632,9 @@ function processQRValue(value) {
     );
 
     const match =
-        value.match(/XO-\d+/i);
+        value.match(
+            /XO-\d+/i
+        );
 
     if (!match) {
 
@@ -568,7 +648,9 @@ function processQRValue(value) {
     const qrId =
         match[0].toUpperCase();
 
-    if (!/^XO-\d+$/.test(qrId)) {
+    if (
+        !/^XO-\d+$/.test(qrId)
+    ) {
 
         showConnectionError(
             "Invalid XO+ QR code."
@@ -582,7 +664,10 @@ function processQRValue(value) {
         qrId
     );
 
-    sendAttendance(qrId);
+    sendAttendance(
+        qrId
+    );
+
 }
 
 
@@ -621,17 +706,36 @@ function sendAttendance(qrId) {
         completed = true;
 
         if (timeoutId) {
-            clearTimeout(timeoutId);
+
+            clearTimeout(
+                timeoutId
+            );
+
         }
 
-        if (script && script.parentNode) {
-            script.parentNode.removeChild(script);
+        if (
+            script &&
+            script.parentNode
+        ) {
+
+            script.parentNode.removeChild(
+                script
+            );
+
         }
 
         try {
-            delete window[callbackName];
+
+            delete window[
+                callbackName
+            ];
+
         } catch (error) {
-            window[callbackName] = undefined;
+
+            window[
+                callbackName
+            ] = undefined;
+
         }
 
     }
@@ -671,6 +775,7 @@ function sendAttendance(qrId) {
                 );
 
                 showAttendanceConfirmed(
+
                     result.name ||
                     "Attendee",
 
@@ -684,6 +789,7 @@ function sendAttendance(qrId) {
                     "",
 
                     false
+
                 );
 
                 return;
@@ -693,7 +799,8 @@ function sendAttendance(qrId) {
             /*
              * ALREADY PRESENT
              *
-             * This is NOT a connection error.
+             * This is NOT a
+             * connection error.
              */
 
             if (
@@ -707,6 +814,7 @@ function sendAttendance(qrId) {
                 );
 
                 showAttendanceConfirmed(
+
                     result.name ||
                     "Attendee",
 
@@ -720,6 +828,7 @@ function sendAttendance(qrId) {
                     "",
 
                     true
+
                 );
 
                 return;
@@ -736,10 +845,12 @@ function sendAttendance(qrId) {
             );
 
             showConnectionError(
+
                 result &&
                 result.message
                     ? result.message
                     : "Unable to record attendance."
+
             );
 
         };
@@ -750,18 +861,18 @@ function sendAttendance(qrId) {
        -------------------------------------------------------- */
 
     script =
-        document.createElement("script");
+        document.createElement(
+            "script"
+        );
 
     script.id =
         callbackName;
 
-    script.async = true;
+    script.async =
+        true;
 
     /*
-     * IMPORTANT:
-     *
-     * We keep the existing Apps Script URL.
-     * The deployment is now Version 4.0.
+     * Same Apps Script deployment URL.
      */
 
     script.src =
@@ -970,8 +1081,8 @@ function closeSuccessPopup() {
     );
 
     /*
-     * Allow the same QR to be scanned again
-     * after closing the popup.
+     * Allow the same QR to be
+     * scanned again after closing.
      */
 
     lastScannedQR = "";
@@ -1013,6 +1124,7 @@ function stopCamera() {
         );
 
         scannerInterval = null;
+
     }
 
 
@@ -1025,11 +1137,15 @@ function stopCamera() {
             );
 
         stream = null;
+
     }
 
 
     if (video) {
-        video.srcObject = null;
+
+        video.srcObject =
+            null;
+
     }
 
 }
@@ -1067,7 +1183,9 @@ async function handleQRUpload(event) {
             });
 
         const imageBitmap =
-            await createImageBitmap(file);
+            await createImageBitmap(
+                file
+            );
 
         const barcodes =
             await detector.detect(
@@ -1095,7 +1213,9 @@ async function handleQRUpload(event) {
             value
         );
 
-        processQRValue(value);
+        processQRValue(
+            value
+        );
 
     } catch (error) {
 
@@ -1111,7 +1231,8 @@ async function handleQRUpload(event) {
     }
 
 
-    event.target.value = "";
+    event.target.value =
+        "";
 
 }
 
@@ -1129,3 +1250,4 @@ window.addEventListener(
 
 </body>
 </html>
+```
