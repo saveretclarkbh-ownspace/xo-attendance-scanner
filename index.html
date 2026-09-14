@@ -398,7 +398,7 @@
     <div
         class="status"
         id="scannerStatus">
-        Unable to connect to attendance system.
+        Ready to scan your QR code.
     </div>
 
     <div class="buttons">
@@ -851,180 +851,138 @@ function processQRValue(value) {
 
 function sendAttendance(qrId) {
 
-    console.log(
-        "Sending attendance:",
-        qrId
-    );
+    const status = document.getElementById("scannerStatus");
+
+    console.log("Sending attendance:", qrId);
+
+    if (!qrId) {
+        showConnectionError("QR ID is missing.");
+        return;
+    }
+
+    if (status) {
+        status.textContent = "Checking attendance...";
+    }
 
     const callbackName =
-        "xoAttendanceCallback_" +
-        Date.now();
+        "xoAttendanceCallback_" + Date.now();
 
     let completed = false;
-
     let script = null;
-
     let timeoutId = null;
-
 
     function cleanup() {
 
-        if (completed) {
-            return;
-        }
-
-        completed = true;
-
         if (timeoutId) {
-
-            clearTimeout(
-                timeoutId
-            );
-
+            clearTimeout(timeoutId);
+            timeoutId = null;
         }
 
-        if (
-            script &&
-            script.parentNode
-        ) {
-
-            script.parentNode.removeChild(
-                script
-            );
-
+        if (script && script.parentNode) {
+            script.parentNode.removeChild(script);
         }
 
         try {
-
-            delete window[
-                callbackName
-            ];
-
+            delete window[callbackName];
         } catch (error) {
-
-            window[
-                callbackName
-            ] = undefined;
-
+            window[callbackName] = undefined;
         }
-
     }
 
+    function finish() {
 
-    /* ========================================================
-       JSONP CALLBACK
-       ======================================================== */
+        if (completed) {
+            return false;
+        }
 
-    window[callbackName] =
-        function(result) {
+        completed = true;
+        cleanup();
 
-            console.log(
-                "Attendance API response:",
-                result
-            );
+        return true;
+    }
 
-            if (completed) {
-                return;
+    window[callbackName] = function(result) {
+
+        console.log("Attendance API response:", result);
+
+        if (!finish()) {
+            return;
+        }
+
+        if (result && result.success === true) {
+
+            if (status) {
+                status.textContent = "Attendance confirmed.";
             }
 
-            cleanup();
-
-
-            /* SUCCESS */
-
-            if (
-                result &&
-                result.success === true
-            ) {
-
-                showAttendanceConfirmed(
-
-                    result.name ||
-                    "Attendee",
-
-                    result.qrId ||
-                    qrId,
-
-                    result.date ||
-                    "",
-
-                    result.time ||
-                    "",
-
-                    false
-
-                );
-
-                return;
-            }
-
-
-            /* ALREADY PRESENT */
-
-            if (
-                result &&
-                result.alreadyPresent === true
-            ) {
-
-                showAttendanceConfirmed(
-
-                    result.name ||
-                    "Attendee",
-
-                    result.qrId ||
-                    qrId,
-
-                    result.date ||
-                    "",
-
-                    result.time ||
-                    "",
-
-                    true
-
-                );
-
-                return;
-            }
-
-
-            /* SERVER ERROR */
-
-            console.error(
-                "Attendance API returned an error:",
-                result
+            showAttendanceConfirmed(
+                result.name || "Attendee",
+                result.qrId || qrId,
+                result.date || "",
+                result.time || "",
+                false
             );
 
-            showConnectionError(
+            return;
+        }
 
-                result &&
-                result.message
-                    ? result.message
-                    : "Unable to record attendance."
+        if (result && result.alreadyPresent === true) {
 
+            if (status) {
+                status.textContent = "Attendance already confirmed.";
+            }
+
+            showAttendanceConfirmed(
+                result.name || "Attendee",
+                result.qrId || qrId,
+                result.date || "",
+                result.time || "",
+                true
             );
 
-        };
+            return;
+        }
 
-
-    /* ========================================================
-       CREATE JSONP SCRIPT
-       ======================================================== */
-
-    script =
-        document.createElement(
-            "script"
+        console.error(
+            "Attendance API returned an error:",
+            result
         );
 
-    script.id =
-        callbackName;
+        showConnectionError(
+            result && result.message
+                ? result.message
+                : "Unable to record attendance."
+        );
+    };
 
-    script.async =
-        true;
+    script = document.createElement("script");
+
+    script.id = callbackName;
+    script.async = true;
+
+    script.onerror = function(error) {
+
+        console.error(
+            "JSONP script failed:",
+            error
+        );
+
+        if (!finish()) {
+            return;
+        }
+
+        showConnectionError(
+            "The attendance system could not be reached. Please check the Apps Script deployment."
+        );
+    };
+
+    const separator =
+        API_URL.indexOf("?") >= 0 ? "&" : "?";
 
     script.src =
         API_URL +
-        "?action=attendance" +
+        separator +
+        "action=attendance" +
         "&qrId=" +
         encodeURIComponent(qrId) +
         "&callback=" +
@@ -1032,69 +990,32 @@ function sendAttendance(qrId) {
         "&_=" +
         Date.now();
 
-
     console.log(
         "Attendance API request:",
         script.src
     );
 
+    document.head.appendChild(script);
 
-    /* ========================================================
-       SCRIPT ERROR
-       ======================================================== */
+    timeoutId = setTimeout(function() {
 
-    script.onerror =
-        function(error) {
+        if (completed) {
+            return;
+        }
 
-            if (completed) {
-                return;
-            }
-
-            console.error(
-                "JSONP script failed:",
-                error
-            );
-
-            cleanup();
-
-            showConnectionError(
-                "The attendance system could not be reached."
-            );
-
-        };
-
-
-    document.head.appendChild(
-        script
-    );
-
-
-    /* ========================================================
-       TIMEOUT
-       ======================================================== */
-
-    timeoutId =
-        setTimeout(
-            function() {
-
-                if (completed) {
-                    return;
-                }
-
-                console.error(
-                    "Attendance API timed out."
-                );
-
-                cleanup();
-
-                showConnectionError(
-                    "The attendance system took too long to respond."
-                );
-
-            },
-            15000
+        console.error(
+            "Attendance API timed out."
         );
 
+        if (!finish()) {
+            return;
+        }
+
+        showConnectionError(
+            "The attendance system took too long to respond."
+        );
+
+    }, 15000);
 }
 
 
@@ -1196,6 +1117,14 @@ function showConnectionError(message) {
         message
     );
 
+    const status =
+        document.getElementById("scannerStatus");
+
+    if (status) {
+        status.textContent =
+            "Unable to connect to attendance system.";
+    }
+
     document.getElementById(
         "errorMessage"
     ).textContent =
@@ -1227,6 +1156,14 @@ function closeSuccessPopup() {
 
     lastScanTime = 0;
 
+    const status =
+        document.getElementById("scannerStatus");
+
+    if (status) {
+        status.textContent =
+            "Ready to scan your QR code.";
+    }
+
 }
 
 
@@ -1245,6 +1182,14 @@ function closeErrorPopup() {
     lastScannedQR = "";
 
     lastScanTime = 0;
+
+    const status =
+        document.getElementById("scannerStatus");
+
+    if (status) {
+        status.textContent =
+            "Ready to scan your QR code.";
+    }
 
 }
 
